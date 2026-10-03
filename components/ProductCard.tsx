@@ -56,7 +56,7 @@ export default function ProductCard({ item }: ProductCardProps) {
       {/* Clean, Compact, Image-Focused Product Card */}
       <div
         onClick={() => setShowDetailModal(true)}
-        className="w-full min-w-0 rounded-2xl bg-[#0A1628] border border-[#1C2D4A] hover:border-[#C9A24A]/50 transition-all duration-200 overflow-hidden flex flex-col group shadow-xs hover:shadow-lg cursor-pointer"
+        className="w-full max-w-full min-w-0 rounded-2xl bg-[#0A1628] border border-[#1C2D4A] hover:border-[#C9A24A]/50 transition-all duration-200 overflow-hidden flex flex-col group shadow-xs hover:shadow-lg cursor-pointer"
       >
         {/* Large Food Image Container */}
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#101F35] flex items-center justify-center shrink-0">
@@ -87,10 +87,10 @@ export default function ProductCard({ item }: ProductCardProps) {
         </div>
 
         {/* Compact Content: Name & Price + Add */}
-        <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between min-w-0 space-y-1.5">
+        <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between min-w-0 max-w-full space-y-1.5">
           {/* Product Name */}
-          <div className="min-w-0">
-            <h3 className="font-serif text-xs sm:text-sm font-bold text-[#F5F1E8] group-hover:text-[#E2C56B] transition-colors leading-tight line-clamp-1 sm:line-clamp-2">
+          <div className="min-w-0 max-w-full">
+            <h3 className="font-serif text-xs sm:text-sm font-bold text-[#F5F1E8] group-hover:text-[#E2C56B] transition-colors leading-tight line-clamp-1 sm:line-clamp-2 break-words">
               {item.name}
             </h3>
           </div>
@@ -99,7 +99,7 @@ export default function ProductCard({ item }: ProductCardProps) {
           {hasSizes && item.sizes.length > 1 ? (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 my-0.5 overflow-x-auto scrollbar-none"
+              className="flex items-center gap-1 my-0.5 overflow-x-auto scrollbar-none max-w-full"
             >
               {item.sizes.map((s, idx) => {
                 const isSelected = selectedSizeIdx === idx;
@@ -122,11 +122,11 @@ export default function ProductCard({ item }: ProductCardProps) {
           ) : null}
 
           {/* Price & Add Button Row */}
-          <div className="pt-1 flex items-center justify-between gap-1.5">
+          <div className="pt-1 flex items-center justify-between gap-1 sm:gap-1.5 min-w-0 max-w-full">
             {hasValidPrice ? (
               <>
-                <div className="min-w-0">
-                  <span className="text-sm sm:text-base font-extrabold text-[#F5F1E8] leading-none whitespace-nowrap">
+                <div className="min-w-0 shrink">
+                  <span className="text-xs sm:text-base font-extrabold text-[#F5F1E8] leading-none whitespace-nowrap">
                     {currentSize?.price === 0 ? (
                       <span className="text-[#E2C56B]">FREE</span>
                     ) : (
@@ -138,7 +138,7 @@ export default function ProductCard({ item }: ProductCardProps) {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className={`flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer shadow-xs shrink-0 active:scale-95 ${
+                  className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer shadow-xs shrink-0 active:scale-95 ${
                     isAddedAnimation
                       ? 'bg-[#10B981] text-white scale-95'
                       : 'bg-gradient-to-r from-[#C9A24A] to-[#B89033] hover:from-[#D4AF37] hover:to-[#C9A24A] text-[#07111F] shadow-[0_2px_8px_rgba(201,162,74,0.25)]'
@@ -148,26 +148,26 @@ export default function ProductCard({ item }: ProductCardProps) {
                   {isAddedAnimation ? (
                     <>
                       <Check className="w-3.5 h-3.5" />
-                      <span className="text-[11px]">Added</span>
+                      <span className="text-[10px] sm:text-[11px]">Added</span>
                     </>
                   ) : (
                     <>
                       <Plus className="w-3.5 h-3.5" />
-                      <span className="text-[11px]">Add</span>
+                      <span className="text-[10px] sm:text-[11px]">Add</span>
                     </>
                   )}
                 </button>
               </>
             ) : (
               <>
-                <span className="text-xs font-bold text-[#E2C56B]">On Order</span>
+                <span className="text-xs font-bold text-[#E2C56B] truncate">On Order</span>
                 <button
                   type="button"
                   onClick={handleInquireWhatsApp}
-                  className="flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-[#101F35] border border-[#C9A24A]/40 text-[#E2C56B] hover:bg-[#C9A24A] hover:text-[#07111F] font-bold text-xs transition-all cursor-pointer shrink-0"
+                  className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-[#101F35] border border-[#C9A24A]/40 text-[#E2C56B] hover:bg-[#C9A24A] hover:text-[#07111F] font-bold text-xs transition-all cursor-pointer shrink-0"
                 >
                   <MessageCircle className="w-3 h-3" />
-                  <span className="text-[11px]">Inquire</span>
+                  <span className="text-[10px] sm:text-[11px]">Inquire</span>
                 </button>
               </>
             )}

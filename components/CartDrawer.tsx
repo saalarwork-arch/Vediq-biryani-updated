@@ -158,7 +158,7 @@ export default function CartDrawer() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       <div
         className="w-full max-w-lg bg-[#0A1628] border-l border-[#1C2D4A] h-full flex flex-col shadow-2xl overflow-hidden"
         role="dialog"

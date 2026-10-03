@@ -74,17 +74,18 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 w-full max-w-[100vw] overflow-x-clip box-border ${
         isScrolled
           ? 'bg-[#0A1628]/95 backdrop-blur-md border-b border-[#1C2D4A] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] py-1 sm:py-1.5'
           : 'bg-[#07111F]/92 backdrop-blur-sm border-b border-[#1C2D4A] py-1.5 sm:py-2'
       }`}
+      style={{ width: '100%', maxWidth: '100vw' }}
     >
       {/* 1. MATHEMATICALLY EXACT VIEWPORT-CENTERED LOGO LAYER (Spans 100% of header width) */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-14 xs:px-16 sm:px-20 md:px-28 lg:px-40 h-full">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-8 xs:px-12 sm:px-20 md:px-28 lg:px-40 h-full w-full max-w-full overflow-hidden box-border shrink-0 min-w-0">
         <Link
           href="/"
-          className="pointer-events-auto flex items-center justify-center h-full max-h-[96%] py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24A] rounded-lg transition-transform duration-200 hover:scale-[1.02]"
+          className="pointer-events-auto flex items-center justify-center h-full max-h-[96%] py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24A] rounded-lg transition-transform duration-200 hover:scale-[1.02] w-auto max-w-full shrink-0 min-w-0"
           aria-label="Vediq Biryani Homepage"
         >
           <VediqLogo variant="dark" size="header" showTagline={true} />
@@ -92,10 +93,10 @@ export default function Navbar() {
       </div>
 
       {/* 2. HEADER CONTROLS CONTAINER (Left Controls & Right Controls) */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-20">
-        <div className="flex items-center justify-between min-h-[64px] sm:min-h-[72px] md:min-h-[80px] lg:min-h-[86px]">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-20 box-border">
+        <div className="flex items-center justify-between min-h-[64px] sm:min-h-[72px] md:min-h-[80px] lg:min-h-[86px] w-full max-w-full box-border shrink-0 min-w-0">
           {/* Left Controls: Hamburger on mobile, Left Nav Links on desktop */}
-          <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 min-w-0 max-w-full shrink-0 box-border">
             {/* Mobile Menu Toggle Button (Left Position on Mobile) */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -106,7 +107,7 @@ export default function Navbar() {
             </button>
 
             {/* Desktop Left Nav Links with Scroll-Spy Highlighting */}
-            <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
+            <nav className="hidden lg:flex items-center gap-4 xl:gap-6 max-w-full shrink-0 min-w-0">
               <a
                 href="#menu"
                 className={`text-xs lg:text-sm font-semibold transition-all py-1 whitespace-nowrap relative ${
@@ -142,9 +143,9 @@ export default function Navbar() {
           </div>
 
           {/* Right Controls: Desktop Right Nav Links, Theme Toggle, Cart Button */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 shrink-0 min-w-0 max-w-full box-border">
             {/* Desktop Right Nav Links with Scroll-Spy Highlighting */}
-            <nav className="hidden xl:flex items-center gap-5 mr-2">
+            <nav className="hidden xl:flex items-center gap-5 mr-2 max-w-full shrink-0 min-w-0">
               <a
                 href="#reviews"
                 className={`text-xs lg:text-sm font-semibold transition-all py-1 whitespace-nowrap relative ${
@@ -207,8 +208,8 @@ export default function Navbar() {
 
       {/* Mobile dropdown menu with Scroll-Spy Highlighting */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-[#0A1628] border-b border-[#1C2D4A] px-4 pt-3 pb-6 space-y-3 shadow-xl animate-in slide-in-from-top-2 duration-200 relative z-30">
-          <div className="flex flex-col space-y-2 pt-1">
+        <div className="lg:hidden bg-[#0A1628] border-b border-[#1C2D4A] px-4 pt-3 pb-6 space-y-3 shadow-xl animate-in slide-in-from-top-2 duration-200 relative z-30 w-full max-w-full box-border shrink-0 min-w-0">
+          <div className="flex flex-col space-y-2 pt-1 w-full max-w-full box-border shrink-0 min-w-0">
             <a
               href="#menu"
               onClick={() => setIsMobileMenuOpen(false)}

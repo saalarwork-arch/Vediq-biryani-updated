@@ -39,8 +39,8 @@ export default function PWAInstallButton() {
   return (
     <>
       {/* Floating Small Web App Install Trigger in Bottom-Left */}
-      <div className="fixed bottom-5 left-4 sm:left-6 z-30 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-3 duration-300">
-        <div className="flex items-center bg-[#0A1628]/95 backdrop-blur-md border border-[#C9A24A]/50 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] p-1 text-[#F5F1E8]">
+      <div className="fixed bottom-5 left-4 sm:left-6 z-30 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-3 duration-300 max-w-[calc(100vw-5rem)]">
+        <div className="flex items-center bg-[#0A1628]/95 backdrop-blur-md border border-[#C9A24A]/50 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.4)] p-1 text-[#F5F1E8] max-w-full">
           <button
             onClick={handleInstallClick}
             disabled={isInstalling}

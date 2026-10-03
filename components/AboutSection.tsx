@@ -28,15 +28,15 @@ export default function AboutSection() {
   ];
 
   return (
-    <section id="about" className="py-10 sm:py-14 bg-[#0A1628] border-b border-[#1C2D4A] scroll-mt-20 sm:scroll-mt-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+    <section id="about" className="py-10 sm:py-14 bg-[#0A1628] border-b border-[#1C2D4A] scroll-mt-20 sm:scroll-mt-24 w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center w-full">
           <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:col-span-6 space-y-4 sm:space-y-5"
+            className="lg:col-span-6 space-y-4 sm:space-y-5 w-full"
           >
             <div className="flex items-center gap-2 text-[#C9A24A]">
               <span className="w-6 h-[1px] bg-[#C9A24A]/70" />

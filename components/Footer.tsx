@@ -20,9 +20,9 @@ export default function Footer() {
   const rawPhoneDigits = phoneVal.replace(/\D/g, '');
 
   return (
-    <footer className="bg-[#07111F] border-t border-[#1C2D4A] text-[#AAB4C2] text-xs pt-16 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-[#1C2D4A]">
+    <footer className="bg-[#07111F] border-t border-[#1C2D4A] text-[#AAB4C2] text-xs pt-16 pb-12 w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-[#1C2D4A] w-full">
           {/* Brand Info & Business Category */}
           <div className="space-y-4">
             <VediqLogo variant="dark" size="lg" showTagline={true} />

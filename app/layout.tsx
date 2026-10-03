@@ -6,6 +6,8 @@ export const viewport: Viewport = {
   themeColor: '#07111F',
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
@@ -34,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+    <html lang="en" className="scroll-smooth w-full max-w-full overflow-x-hidden" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -53,7 +55,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-[#07111F] text-[#F5F1E8] antialiased min-h-screen selection:bg-[#C9A24A]/30 selection:text-[#F5F1E8] transition-colors duration-200">
+      <body className="bg-[#07111F] text-[#F5F1E8] antialiased min-h-screen w-full max-w-full overflow-x-hidden selection:bg-[#C9A24A]/30 selection:text-[#F5F1E8] transition-colors duration-200">
         <Providers>{children}</Providers>
       </body>
     </html>

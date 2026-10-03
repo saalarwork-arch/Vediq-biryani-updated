@@ -231,9 +231,9 @@ export default function OrderHistoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07111F] text-[#F5F1E8] flex flex-col selection:bg-[#C9A24A] selection:text-[#07111F]">
+    <div className="min-h-screen bg-[#07111F] text-[#F5F1E8] flex flex-col selection:bg-[#C9A24A] selection:text-[#07111F] w-full max-w-full overflow-x-hidden">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-[#0A1628]/95 backdrop-blur-md border-b border-[#1C2D4A] px-4 sm:px-6 lg:px-8 py-3.5">
+      <header className="sticky top-0 z-40 bg-[#0A1628]/95 backdrop-blur-md border-b border-[#1C2D4A] px-4 sm:px-6 lg:px-8 py-3.5 w-full max-w-full">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -286,7 +286,7 @@ export default function OrderHistoryPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 overflow-x-hidden">
         {/* Page Title */}
         <section className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#101F35] border border-[#C9A24A]/30 text-[#E2C56B] text-[11px] font-bold uppercase tracking-wider">

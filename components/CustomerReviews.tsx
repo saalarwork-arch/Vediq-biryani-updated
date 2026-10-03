@@ -123,8 +123,8 @@ export default function CustomerReviews() {
   };
 
   return (
-    <section id="reviews" className="py-10 sm:py-14 bg-[#0A1628] border-b border-[#1C2D4A] relative scroll-mt-20 sm:scroll-mt-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="reviews" className="py-10 sm:py-14 bg-[#0A1628] border-b border-[#1C2D4A] relative scroll-mt-20 sm:scroll-mt-24 w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -203,7 +203,7 @@ export default function CustomerReviews() {
           </motion.div>
         ) : (
           /* Approved Reviews Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             {reviews.map((r, idx) => (
               <motion.div
                 key={r.id}
@@ -211,7 +211,7 @@ export default function CustomerReviews() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.5, delay: (idx % 3) * 0.1, ease: 'easeOut' }}
-                className="p-6 rounded-2xl bg-[#07111F] border border-[#1C2D4A] flex flex-col justify-between space-y-4 shadow-xs hover:border-[#C9A24A]/50 transition-all duration-300"
+                className="p-6 rounded-2xl bg-[#07111F] border border-[#1C2D4A] flex flex-col justify-between space-y-4 shadow-xs hover:border-[#C9A24A]/50 transition-all duration-300 w-full"
               >
                 <div className="space-y-3">
                   <div className="flex items-center gap-1 text-[#C9A24A]">
@@ -254,8 +254,8 @@ export default function CustomerReviews() {
 
       {/* Give Feedback Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-3xl bg-[#0A1628] border border-[#1C2D4A] p-6 sm:p-8 shadow-2xl space-y-5 text-left">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto overflow-x-hidden w-full max-w-full">
+          <div className="relative w-full max-w-lg rounded-3xl bg-[#0A1628] border border-[#1C2D4A] p-6 sm:p-8 shadow-2xl space-y-5 text-left max-h-[90vh] overflow-y-auto overflow-x-hidden">
             {/* Modal Header */}
             <div className="flex items-start justify-between">
               <div>

@@ -10,8 +10,8 @@ export default function GallerySection() {
   const visibleGallery = galleryItems.filter((item) => item.is_active !== false);
 
   return (
-    <section className="py-10 sm:py-14 bg-[#07111F] border-b border-[#1C2D4A]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-10 sm:py-14 bg-[#07111F] border-b border-[#1C2D4A] w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -31,7 +31,7 @@ export default function GallerySection() {
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5 w-full">
           {visibleGallery.map((img, idx) => (
             <motion.div
               key={img.id}

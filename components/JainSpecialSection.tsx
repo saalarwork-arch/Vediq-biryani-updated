@@ -57,8 +57,8 @@ export default function JainSpecialSection() {
     });
 
   return (
-    <section id="jain-specials" className="py-8 sm:py-12 md:py-14 bg-[#0A1628] border-b border-[#1C2D4A] relative overflow-hidden transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <section id="jain-specials" className="py-8 sm:py-12 md:py-14 bg-[#0A1628] border-b border-[#1C2D4A] relative overflow-hidden transition-colors duration-200 w-full max-w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#101F35] border border-[#C9A24A]/40 text-[11px] font-bold text-[#E2C56B]">
@@ -91,7 +91,7 @@ export default function JainSpecialSection() {
         </div>
 
         {/* Exactly 4 Jain Products in Exact Order: 2 columns on mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5 w-full">
           {jainBiryanis.map((item) => (
             <ProductCard key={item.id} item={item} />
           ))}

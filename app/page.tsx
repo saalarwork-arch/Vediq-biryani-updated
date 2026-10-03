@@ -16,7 +16,7 @@ import PWAInstallButton from '@/components/PWAInstallButton';
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#07111F] text-[#F5F1E8] relative transition-colors duration-200">
+    <main className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#07111F] text-[#F5F1E8] relative transition-colors duration-200">
       <Navbar />
       <HeroSection />
       <BiryaniCatalog />

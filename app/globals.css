@@ -1,5 +1,52 @@
 @import "tailwindcss";
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  position: relative;
+  background-color: #07111F;
+  color: #F5F1E8;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+#root,
+#__next,
+main {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+header {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
 @layer base {
   :root {
     --bg-primary: #07111F;
@@ -12,13 +59,6 @@
     --text-secondary: #AAB4C2;
     --text-muted: #7E8B9B;
     --border-color: #1C2D4A;
-  }
-
-  body {
-    background-color: #07111F;
-    color: #F5F1E8;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    overflow-x: hidden;
   }
 }
 

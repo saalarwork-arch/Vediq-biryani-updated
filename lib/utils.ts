@@ -6,9 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatINR(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  if (typeof amount !== "number" || isNaN(amount)) return "₹0";
+  const cleanInt = Math.round(amount);
+  return `₹${cleanInt.toLocaleString("en-IN")}`;
 }

@@ -415,9 +415,9 @@ export default function OrderTrackingView({
   };
 
   return (
-    <div className="min-h-screen bg-[#07111F] text-[#F5F1E8] flex flex-col selection:bg-[#C9A24A] selection:text-[#07111F]">
+    <div className="min-h-screen bg-[#07111F] text-[#F5F1E8] flex flex-col selection:bg-[#C9A24A] selection:text-[#07111F] w-full max-w-full overflow-x-hidden">
       {/* Top Royal Navigation Header */}
-      <header className="sticky top-0 z-40 bg-[#0A1628]/95 backdrop-blur-md border-b border-[#1C2D4A] px-4 sm:px-6 lg:px-8 py-3.5 print:hidden">
+      <header className="sticky top-0 z-40 bg-[#0A1628]/95 backdrop-blur-md border-b border-[#1C2D4A] px-4 sm:px-6 lg:px-8 py-3.5 print:hidden w-full max-w-full">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {onBack ? (
@@ -481,7 +481,7 @@ export default function OrderTrackingView({
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 overflow-x-hidden">
         {/* Title & Search Section */}
         <section className="text-center space-y-4 print:hidden">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#101F35] border border-[#C9A24A]/30 text-[#E2C56B] text-[11px] font-bold uppercase tracking-wider">

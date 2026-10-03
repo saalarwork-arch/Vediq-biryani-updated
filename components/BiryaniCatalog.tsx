@@ -16,8 +16,8 @@ export default function BiryaniCatalog() {
   } = useData();
 
   return (
-    <section id="menu" className="py-8 sm:py-12 md:py-16 bg-[#07111F] border-b border-[#1C2D4A] transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="menu" className="py-8 sm:py-12 md:py-16 bg-[#07111F] border-b border-[#1C2D4A] transition-colors duration-200 w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         {/* Compact Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#101F35] border border-[#C9A24A]/40 text-[11px] font-bold text-[#E2C56B]">
@@ -87,7 +87,7 @@ export default function BiryaniCatalog() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5 w-full">
             {filteredMenuItems.map((item) => (
               <ProductCard key={item.id} item={item} />
             ))}

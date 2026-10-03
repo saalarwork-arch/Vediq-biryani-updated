@@ -52,9 +52,9 @@ export default function OrderSuccessModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden overflow-y-auto">
       <div
-        className="w-full max-w-lg bg-[#0A1628] border border-[#1C2D4A] rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl relative max-h-[92vh] overflow-y-auto"
+        className="w-full max-w-lg bg-[#0A1628] border border-[#1C2D4A] rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl relative max-h-[92vh] overflow-y-auto overflow-x-hidden"
         role="dialog"
         aria-modal="true"
       >

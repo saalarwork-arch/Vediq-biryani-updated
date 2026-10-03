@@ -24,16 +24,16 @@ export default function DeliverySection() {
   ];
 
   return (
-    <section className="py-10 sm:py-12 bg-[#07111F] border-b border-[#1C2D4A]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-10 sm:py-12 bg-[#07111F] border-b border-[#1C2D4A] w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="p-8 md:p-10 rounded-3xl bg-[#0A1628] border border-[#1C2D4A] shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+          className="p-8 md:p-10 rounded-3xl bg-[#0A1628] border border-[#1C2D4A] shadow-[0_8px_30px_rgba(0,0,0,0.4)] w-full"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center w-full">
             {deliveryFeatures.map((item, idx) => {
               const Icon = item.icon;
               return (

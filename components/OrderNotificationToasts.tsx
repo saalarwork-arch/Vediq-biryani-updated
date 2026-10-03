@@ -23,7 +23,7 @@ export default function OrderNotificationToasts() {
   return (
     <aside
       aria-label="Order notifications"
-      className="fixed top-20 sm:top-24 right-3 sm:right-6 z-50 flex flex-col gap-3 max-w-[360px] sm:max-w-md w-full pointer-events-none"
+      className="fixed top-20 sm:top-24 right-3 sm:right-6 z-50 flex flex-col gap-3 max-w-[calc(100vw-1.5rem)] sm:max-w-md w-full pointer-events-none overflow-hidden"
     >
       <AnimatePresence>
         {toasts.map((toast) => {
@@ -55,9 +55,9 @@ export default function OrderNotificationToasts() {
           return (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: -20, scale: 0.95, x: 20 }}
-              animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
-              exit={{ opacity: 0, y: -10, scale: 0.9, x: 20, transition: { duration: 0.2 } }}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.9, transition: { duration: 0.2 } }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className={`pointer-events-auto w-full rounded-2xl bg-[#0A1628]/95 backdrop-blur-md p-4 sm:p-5 border text-[#F5F1E8] ${accentGlow} relative overflow-hidden`}
             >

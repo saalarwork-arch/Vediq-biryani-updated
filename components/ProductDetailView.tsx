@@ -252,11 +252,11 @@ export default function ProductDetailView({ item, isOpen, onClose }: ProductDeta
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex flex-col bg-[#07111F] text-[#F5F1E8] overflow-y-auto selection:bg-[#C9A24A] selection:text-[#07111F]">
+      <div className="fixed inset-0 z-50 flex flex-col bg-[#07111F] text-[#F5F1E8] overflow-y-auto overflow-x-hidden selection:bg-[#C9A24A] selection:text-[#07111F] w-full max-w-full">
         {/* ========================================================================= */}
         {/* 1. TOP STICKY NAVIGATION BAR                                             */}
         {/* ========================================================================= */}
-        <header className="sticky top-0 z-40 bg-[#07111F]/95 backdrop-blur-md border-b border-[#1C2D4A] px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-40 bg-[#07111F]/95 backdrop-blur-md border-b border-[#1C2D4A] px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4 w-full max-w-full">
           <button
             onClick={onClose}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0A1628] hover:bg-[#101F35] border border-[#1C2D4A] hover:border-[#C9A24A]/40 text-xs sm:text-sm font-bold text-[#F5F1E8] hover:text-[#E2C56B] transition-all cursor-pointer group active:scale-95 shadow-xs"
@@ -303,7 +303,7 @@ export default function ProductDetailView({ item, isOpen, onClose }: ProductDeta
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 pb-36 md:pb-12"
+          className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 pb-36 md:pb-12 overflow-x-hidden"
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
             {/* ======================================================================= */}
@@ -640,8 +640,8 @@ export default function ProductDetailView({ item, isOpen, onClose }: ProductDeta
         {/* ========================================================================= */}
         {/* 3. MOBILE STICKY BOTTOM PURCHASE BAR                                     */}
         {/* ========================================================================= */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A1628]/95 backdrop-blur-md border-t border-[#1C2D4A] p-3.5 px-4 shadow-[0_-8px_30px_rgba(0,0,0,0.6)]">
-          <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A1628]/95 backdrop-blur-md border-t border-[#1C2D4A] p-3.5 px-4 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] w-full max-w-full overflow-hidden">
+          <div className="max-w-md mx-auto flex items-center justify-between gap-3 w-full">
             {/* Price & Current Portion Info */}
             <div className="min-w-0">
               <span className="text-[10px] text-[#7E8B9B] uppercase font-bold block truncate">
