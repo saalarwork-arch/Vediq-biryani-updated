@@ -1,0 +1,6 @@
+{
+  "name": "Vediq Biryani",
+  "description": "Experience the Heritage of Aromas. Authentic slow-cooked royal biryanis crafted with aromatic spices and traditional recipes, delivered fresh to your doorstep.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

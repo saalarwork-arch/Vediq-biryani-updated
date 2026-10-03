@@ -1,0 +1,22 @@
+{
+  "VB-317364": {
+    "order_number": "VB-317364",
+    "notify_email": true,
+    "email": "real.saalar@gmail.com",
+    "updated_at": "2026-09-29T16:57:36.428Z",
+    "history": [
+      {
+        "status": "ready_for_delivery",
+        "sent_at": "2026-09-29T16:57:38.205Z",
+        "success": true,
+        "subject": "🥘 Order #VB-317364 is Packed & Ready for Delivery!"
+      },
+      {
+        "status": "out_for_delivery",
+        "sent_at": "2026-09-29T16:57:38.516Z",
+        "success": true,
+        "subject": "🛵 Order #VB-317364 is Out for Delivery!"
+      }
+    ]
+  }
+}
