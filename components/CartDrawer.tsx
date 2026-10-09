@@ -412,29 +412,21 @@ export default function CartDrawer() {
 
                   <div>
                     <label className="block text-[#F5F1E8] font-bold mb-1">Payment Method</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('Cash on Delivery')}
-                        className={`p-2 rounded-xl text-center font-bold border cursor-pointer transition shadow-xs ${
-                          paymentMethod === 'Cash on Delivery'
-                            ? 'bg-[#101F35] border-[#C9A24A] text-[#E2C56B]'
-                            : 'bg-[#07111F] border-[#1C2D4A] text-[#AAB4C2]'
-                        }`}
-                      >
-                        Cash on Delivery
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('UPI / Card on Delivery')}
-                        className={`p-2 rounded-xl text-center font-bold border cursor-pointer transition shadow-xs ${
-                          paymentMethod === 'UPI / Card on Delivery'
-                            ? 'bg-[#101F35] border-[#C9A24A] text-[#E2C56B]'
-                            : 'bg-[#07111F] border-[#1C2D4A] text-[#AAB4C2]'
-                        }`}
-                      >
-                        UPI / Card on Delivery
-                      </button>
+                    <div className="p-3 rounded-xl bg-[#101F35] border border-[#C9A24A]/40 flex items-start gap-3 shadow-xs">
+                      <div className="w-4 h-4 rounded-full border-2 border-[#C9A24A] flex items-center justify-center mt-0.5 shrink-0 bg-[#07111F]">
+                        <div className="w-2 h-2 rounded-full bg-[#E2C56B]"></div>
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#E2C56B] text-xs">Cash on Delivery (COD)</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#07111F] text-emerald-400 border border-emerald-500/30">
+                            Available
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#AAB4C2] leading-relaxed">
+                          Pay with Cash or UPI upon delivery at your doorstep when your royal dum biryani arrives hot.
+                        </p>
+                      </div>
                     </div>
                   </div>
 

@@ -13,6 +13,11 @@ import {
   ShieldCheck,
   Save,
   CheckCircle2,
+  Smartphone,
+  Bell,
+  Volume2,
+  VolumeX,
+  Download,
 } from 'lucide-react';
 import { SiteSettings } from '@/types/supabase';
 
@@ -20,12 +25,28 @@ interface SettingsTabProps {
   siteSettings: SiteSettings;
   onSaveSettings: (settings: SiteSettings) => Promise<{ success: boolean; error?: string }>;
   showToast: (text: string, type?: 'success' | 'error' | 'info') => void;
+  onOpenInstallModal?: () => void;
+  isInstalled?: boolean;
+  isInstallable?: boolean;
+  notificationPermission?: NotificationPermission;
+  onRequestNotificationPermission?: () => Promise<NotificationPermission>;
+  onSendTestNotification?: () => void;
+  soundEnabled?: boolean;
+  onToggleSound?: () => void;
 }
 
 export default function SettingsTab({
   siteSettings,
   onSaveSettings,
   showToast,
+  onOpenInstallModal,
+  isInstalled = false,
+  isInstallable = false,
+  notificationPermission = 'default',
+  onRequestNotificationPermission,
+  onSendTestNotification,
+  soundEnabled = true,
+  onToggleSound,
 }: SettingsTabProps) {
   const [formData, setFormData] = useState<SiteSettings>({ ...siteSettings });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,6 +279,132 @@ export default function SettingsTab({
           </div>
         </div>
       </form>
+
+      {/* PWA & Mobile Device Management Section */}
+      <div className="bg-white p-6 rounded-2xl border border-[#EAE6DF] shadow-xs space-y-5 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#F2EFE8] pb-3">
+          <h3 className="font-bold text-[#1A1814] text-sm flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-[#9E7422]" />
+            <span>Installable Web App (PWA) &amp; Device Notifications</span>
+          </h3>
+          <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-[#FAF5EB] text-[#9E7422] border border-[#EAE0CD] w-fit">
+            Native PWA Certified
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Card 1: Installation State */}
+          <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[#1A1814]">Admin App Installation</span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isInstalled
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-amber-100 text-amber-800 border border-amber-300'
+                }`}
+              >
+                {isInstalled ? 'Installed (Standalone PWA)' : 'Running in Browser'}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#6B665E] leading-relaxed">
+              Install the VEDIQ BIRYANI ADMIN app onto your home screen or dock for quick 1-tap launch, standalone window mode, and fast order fulfillment.
+            </p>
+            {onOpenInstallModal && (
+              <button
+                type="button"
+                onClick={onOpenInstallModal}
+                className="w-full py-2.5 px-3 rounded-xl bg-[#1A1814] hover:bg-[#2C2924] text-[#F5F1E8] font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98"
+              >
+                <Download className="w-3.5 h-3.5 text-[#C9A24A]" />
+                <span>{isInstalled ? 'View App Status & Instructions' : 'Install Admin App to Home Screen'}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Card 2: Notifications & Audio Chime */}
+          <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[#1A1814]">Live Order Push Alerts</span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  notificationPermission === 'granted'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : notificationPermission === 'denied'
+                    ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                    : 'bg-blue-100 text-blue-800 border border-blue-300'
+                }`}
+              >
+                {notificationPermission === 'granted'
+                  ? 'Permission Granted'
+                  : notificationPermission === 'denied'
+                  ? 'Blocked in Browser'
+                  : 'Permission Not Requested'}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#6B665E] leading-relaxed">
+              Browser push alerts notify you with sound and order ID whenever a customer places a new biryani order.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {notificationPermission !== 'granted' && onRequestNotificationPermission && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const res = await onRequestNotificationPermission();
+                    if (res === 'granted') {
+                      showToast('✓ Browser notifications enabled!', 'success');
+                    } else if (res === 'denied') {
+                      showToast('Notifications blocked in browser settings', 'error');
+                    }
+                  }}
+                  className="py-2 px-3 rounded-xl bg-gradient-to-r from-[#C59A3F] to-[#9E7422] text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>Enable Push Alerts</span>
+                </button>
+              )}
+
+              {onSendTestNotification && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSendTestNotification();
+                    showToast('Dispatched test alert!', 'info');
+                  }}
+                  className="py-2 px-3 rounded-xl bg-white border border-[#DDD8CE] hover:bg-stone-50 text-[#1A1814] font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Bell className="w-3.5 h-3.5 text-[#9E7422]" />
+                  <span>Test Notification</span>
+                </button>
+              )}
+
+              {onToggleSound && (
+                <button
+                  type="button"
+                  onClick={onToggleSound}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    soundEnabled
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                      : 'bg-stone-100 border-stone-300 text-stone-600'
+                  }`}
+                >
+                  {soundEnabled ? (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Sound: On</span>
+                    </>
+                  ) : (
+                    <>
+                      <VolumeX className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Sound: Muted</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -20,8 +20,8 @@ export const metadata: Metadata = {
     title: 'VediqBiryani',
   },
   icons: {
-    icon: '/icon.png',
-    apple: '/icon.png',
+    icon: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     title: 'Vediq Biryani',

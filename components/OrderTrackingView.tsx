@@ -1150,6 +1150,22 @@ export default function OrderTrackingView({
                       </div>
                     )}
 
+                    <div className="flex justify-between items-center pt-1 border-t border-[#1C2D4A]/50">
+                      <span>Payment Method:</span>
+                      <span className="text-[#E2C56B] font-semibold">{activeOrder.payment_method || 'Cash on Delivery'}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center pb-1">
+                      <span>Payment Status:</span>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                        activeOrder.payment_status === 'paid'
+                          ? 'bg-emerald-950/50 text-emerald-300 border-emerald-500/30'
+                          : 'bg-amber-950/50 text-amber-300 border-amber-500/30'
+                      }`}>
+                        {activeOrder.payment_status === 'paid' ? 'Paid / Collected' : 'Pending (Pay upon Delivery)'}
+                      </span>
+                    </div>
+
                     <div className="flex justify-between items-center pt-3 border-t border-[#1C2D4A] text-sm">
                       <span className="font-serif font-bold text-[#F5F1E8]">Total Payable:</span>
                       <span className="font-bold text-base text-[#E2C56B]">{formatINR(activeOrder.total)}</span>

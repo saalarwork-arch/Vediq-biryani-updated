@@ -581,8 +581,13 @@ export default function OrderHistoryPage() {
 
                         <div className="p-3 rounded-xl bg-[#0A1628] border border-[#1C2D4A]">
                           <span className="text-[10px] uppercase font-bold text-[#7E8B9B] block">Payment & Slot</span>
-                          <p className="font-bold text-[#F5F1E8] mt-0.5">Method: {order.payment_method}</p>
-                          <p className="text-[#AAB4C2] mt-0.5">Status: {order.payment_status || 'Pending'}</p>
+                          <p className="font-bold text-[#F5F1E8] mt-0.5">Method: {order.payment_method || 'Cash on Delivery'}</p>
+                          <p className="text-[#AAB4C2] mt-0.5">
+                            Status:{' '}
+                            <span className={order.payment_status === 'paid' ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}>
+                              {order.payment_status === 'paid' ? 'Paid / Collected' : 'Pending (Pay on Delivery)'}
+                            </span>
+                          </p>
                           <p className="text-[#7E8B9B] mt-0.5">Slot: {order.delivery_time || 'Standard'}</p>
                         </div>
                       </div>

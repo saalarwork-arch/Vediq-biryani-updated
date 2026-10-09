@@ -141,7 +141,13 @@ export default function OrderSuccessModal() {
           </div>
           <div className="flex justify-between items-center">
             <span>Payment Method:</span>
-            <span className="font-semibold text-[#F5F1E8]">{orderSuccessData.payment_method}</span>
+            <span className="font-semibold text-[#F5F1E8]">{orderSuccessData.payment_method || 'Cash on Delivery'}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span>Payment Status:</span>
+            <span className="font-bold text-amber-300 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/30 text-[11px]">
+              {orderSuccessData.payment_status === 'paid' ? 'Paid / Collected' : 'Pending (Pay on Delivery)'}
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span>Total Payable Amount:</span>

@@ -17,6 +17,9 @@ import {
   Layers,
   Eye,
   EyeOff,
+  ShoppingBag,
+  ExternalLink,
+  ChevronDown,
 } from 'lucide-react';
 import { MenuItem, CategoryItem, MenuItemSize } from '@/types/supabase';
 import { formatINR } from '@/lib/utils';
@@ -47,6 +50,7 @@ export default function ProductsTab({
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -67,6 +71,7 @@ export default function ProductsTab({
     is_active: true,
     sizes: [
       { name: 'Regular Handi (500g)', portion: '500g', serves: 'Serves 1-2', price: 299 },
+      { name: 'Family Handi (1kg)', portion: '1000g', serves: 'Serves 2-3', price: 549 },
     ],
   });
 
@@ -106,6 +111,7 @@ export default function ProductsTab({
         { name: 'Family Handi (1kg)', portion: '1000g', serves: 'Serves 2-3', price: 549 },
       ],
     });
+    setIsPreviewOpen(false);
     setIsModalOpen(true);
   };
 
@@ -113,10 +119,39 @@ export default function ProductsTab({
     setEditingItem(item);
     setFormData({
       ...item,
-      sizes: item.sizes && item.sizes.length > 0 ? [...item.sizes] : [{ name: 'Portion', portion: '1 Portion', serves: 'Serves 1', price: 199 }],
-      images: item.images && item.images.length > 0 ? [...item.images] : (item.image_url ? [item.image_url] : []),
+      sizes:
+        item.sizes && item.sizes.length > 0
+          ? [...item.sizes]
+          : [{ name: 'Regular Handi (500g)', portion: '500g', serves: 'Serves 1-2', price: 299 }],
+      images:
+        item.images && item.images.length > 0
+          ? [...item.images]
+          : item.image_url
+          ? [item.image_url]
+          : [],
     });
+    setIsPreviewOpen(false);
     setIsModalOpen(true);
+  };
+
+  const handleAddSizePreset = (type: '500g' | '1kg') => {
+    if (type === '500g') {
+      setFormData((prev) => ({
+        ...prev,
+        sizes: [
+          ...(prev.sizes || []),
+          { name: 'Regular Handi (500g)', portion: '500g', serves: 'Serves 1-2', price: 349 },
+        ],
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        sizes: [
+          ...(prev.sizes || []),
+          { name: 'Family Feast Handi (1kg)', portion: '1000g', serves: 'Serves 2-3', price: 599 },
+        ],
+      }));
+    }
   };
 
   const handleAddSizeRow = () => {
@@ -156,12 +191,15 @@ export default function ProductsTab({
     }
 
     const primaryImg = (formData.image_url || formData.images?.[0] || '').trim();
-    const allImages = (formData.images && formData.images.length > 0)
-      ? formData.images
-      : (primaryImg ? [primaryImg] : []);
+    const allImages =
+      formData.images && formData.images.length > 0
+        ? formData.images
+        : primaryImg
+        ? [primaryImg]
+        : [];
 
     if (!primaryImg) {
-      showToast('Please select and upload at least one dish photo', 'error');
+      showToast('Please upload at least one dish photo using Supabase storage', 'error');
       return;
     }
 
@@ -172,7 +210,7 @@ export default function ProductsTab({
         name: formData.name.trim(),
         tagline: formData.tagline?.trim() || '',
         description: formData.description?.trim() || '',
-        category: formData.category || 'royal-biryani',
+        category: formData.category || 'biryani',
         badge: formData.badge?.trim() || '',
         is_veg: Boolean(formData.is_veg),
         is_jain: Boolean(formData.is_jain),
@@ -180,22 +218,21 @@ export default function ProductsTab({
         preparation_time_minutes: Number(formData.preparation_time_minutes) || 30,
         image_url: primaryImg,
         images: allImages,
-        sizes: formData.sizes || [{ name: 'Portion', portion: '1 Portion', serves: 'Serves 1', price: 299 }],
+        sizes:
+          formData.sizes || [
+            { name: 'Regular Handi (500g)', portion: '500g', serves: 'Serves 1-2', price: 299 },
+          ],
         popular: Boolean(formData.popular),
         is_active: formData.is_active !== false,
       };
 
-      console.log('[PRODUCTS TAB WORKFLOW] Preparing product payload for onSaveProduct:', {
-        productId: payload.id,
-        primaryImg,
-        allImages,
-        payload,
-      });
-
       const res = await onSaveProduct(payload);
       if (res.success) {
         await refreshAllData();
-        showToast(editingItem ? 'Product updated successfully!' : 'New product created successfully!', 'success');
+        showToast(
+          editingItem ? 'Product updated successfully!' : 'New product created successfully!',
+          'success'
+        );
         setIsModalOpen(false);
       } else {
         showToast(res.error || 'Failed to save product', 'error');
@@ -206,7 +243,7 @@ export default function ProductsTab({
   };
 
   const handleDelete = async (item: MenuItem) => {
-    if (confirm(`Are you sure you want to delete "${item.name}" from the menu?`)) {
+    if (confirm(`Are you sure you want to permanently delete "${item.name}"?`)) {
       const res = await onDeleteProduct(item.id);
       if (res.success) {
         showToast(`"${item.name}" deleted from menu`, 'info');
@@ -216,60 +253,79 @@ export default function ProductsTab({
     }
   };
 
+  const handleToggleSoldOut = async (item: MenuItem) => {
+    const nextState = !(item.is_active !== false);
+    const res = await onToggleActive(item.id, nextState);
+    if (res.success) {
+      showToast(
+        `"${item.name}" marked as ${nextState ? 'Available' : 'Sold Out / Inactive'}`,
+        'success'
+      );
+    } else {
+      showToast(res.error || 'Failed to update availability', 'error');
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header & New Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 text-[#F5F1E8]">
+      {/* 1. HEADER & NEW DISH BUTTON */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#1C2D4A]">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1814]">Products & Dishes</h1>
-          <p className="text-xs sm:text-sm text-[#6B665E] mt-1">
-            Create, update prices, portion variants, images, spicy levels, and Satvik tags.
+          <h1 className="font-serif text-xl sm:text-2xl font-bold text-[#F5F1E8] flex items-center gap-2.5">
+            <UtensilsCrossed className="w-6 h-6 text-[#C9A24A]" />
+            <span>Product &amp; Menu Management</span>
+          </h1>
+          <p className="text-xs text-[#AAB4C2] mt-0.5">
+            Configure dishes, 500g &amp; 1kg portions, photo uploads to Supabase Storage, and mark items as Sold Out.
           </p>
         </div>
 
         <button
+          type="button"
           onClick={handleOpenNew}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C59A3F] to-[#9E7422] hover:from-[#B8860B] text-white text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A24A] to-[#B89033] hover:from-[#D4AF37] hover:to-[#C9A24A] text-[#07111F] text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Dish</span>
         </button>
       </div>
 
-      {/* Filters and Search Bar */}
-      <div className="p-4 rounded-2xl bg-white border border-[#EAE6DF] shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      {/* 2. SEARCH & CATEGORY BAR */}
+      <div className="bg-[#0A1628] p-4 rounded-2xl border border-[#1C2D4A] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C877E]" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7E8B9B]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search dish by name, ingredients, tagline..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] placeholder-[#8C877E] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] placeholder-[#7E8B9B] focus:outline-none focus:border-[#C9A24A]"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
           <button
+            type="button"
             onClick={() => setCategoryFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
               categoryFilter === 'all'
-                ? 'bg-[#1A1814] text-white shadow-xs'
-                : 'bg-[#FAF8F5] text-[#5A564F] hover:bg-[#F2EFE8] border border-[#EAE6DF]'
+                ? 'bg-[#C9A24A] text-[#07111F]'
+                : 'bg-[#07111F] text-[#AAB4C2] hover:text-[#F5F1E8] border border-[#1C2D4A]'
             }`}
           >
-            All ({menuItems.length})
+            All Dishes ({menuItems.length})
           </button>
           {categories
             .filter((c) => c.id !== 'all')
             .map((cat) => (
               <button
                 key={cat.id}
+                type="button"
                 onClick={() => setCategoryFilter(cat.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                   categoryFilter === cat.id
-                    ? 'bg-[#1A1814] text-white shadow-xs'
-                    : 'bg-[#FAF8F5] text-[#5A564F] hover:bg-[#F2EFE8] border border-[#EAE6DF]'
+                    ? 'bg-[#C9A24A] text-[#07111F]'
+                    : 'bg-[#07111F] text-[#AAB4C2] hover:text-[#F5F1E8] border border-[#1C2D4A]'
                 }`}
               >
                 {cat.label}
@@ -278,124 +334,127 @@ export default function ProductsTab({
         </div>
       </div>
 
-      {/* Product List Grid */}
+      {/* 3. PRODUCT CARDS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredItems.map((item) => {
-          const startingPrice = Math.min(...item.sizes.map((s) => s.price));
+          const startingPrice = Math.min(...(item.sizes || []).map((s) => s.price));
           const isActive = item.is_active !== false;
 
           return (
             <div
               key={item.id}
-              className={`rounded-2xl bg-white border transition-all overflow-hidden flex flex-col shadow-xs ${
-                isActive ? 'border-[#EAE6DF] hover:border-[#C59A3F]' : 'border-stone-300 opacity-60 bg-stone-50'
+              className={`rounded-3xl bg-[#0A1628] border transition-all overflow-hidden flex flex-col shadow-lg ${
+                isActive
+                  ? 'border-[#1C2D4A] hover:border-[#C9A24A]/50'
+                  : 'border-rose-900/40 opacity-75 bg-[#080E1A]'
               }`}
             >
-              {/* Image & Badges */}
-              <div className="relative aspect-[16/10] overflow-hidden bg-stone-100">
+              {/* Product Image & Badges */}
+              <div className="relative aspect-[16/10] overflow-hidden bg-[#07111F]">
                 <img
                   src={resolveImageUrl(item.image_url, item.images)}
                   alt={item.name}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   onError={(e) => {
-                    const target = e.currentTarget;
-                    if (target.src !== DEFAULT_FALLBACK_IMAGE) {
-                      target.src = DEFAULT_FALLBACK_IMAGE;
-                    }
+                    e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
                   }}
-                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                {/* Top badges */}
+                {/* Status Overlay Badge */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                  {item.badge && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF5E8] text-[#8C6418] border border-[#E9DCBF] shadow-xs">
+                  {!isActive ? (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-950/90 text-rose-300 border border-rose-500/50 shadow-md">
+                      Sold Out / Inactive
+                    </span>
+                  ) : item.badge ? (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-[#101F35]/90 text-[#E2C56B] border border-[#C9A24A]/40 shadow-md">
                       {item.badge}
-                    </span>
-                  )}
-                  {item.popular && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#C59A3F] text-white shadow-xs">
-                      Best Seller
-                    </span>
-                  )}
-                </div>
-
-                {/* Active toggle button */}
-                <div className="absolute top-3 right-3">
-                  <button
-                    onClick={() => onToggleActive(item.id, !isActive)}
-                    className={`p-1.5 rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1 cursor-pointer ${
-                      isActive ? 'bg-emerald-600 text-white' : 'bg-stone-600 text-white'
-                    }`}
-                    title={isActive ? 'Active on public menu' : 'Hidden from public menu'}
-                  >
-                    {isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-
-                {/* Bottom title on image */}
-                <div className="absolute bottom-3 left-3 right-3">
-                  <span className="text-white font-serif font-bold text-sm block drop-shadow-sm truncate">
-                    {item.name}
-                  </span>
-                  <span className="text-stone-300 text-[11px] block truncate drop-shadow-xs">
-                    {item.tagline || item.description}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card Details */}
-              <div className="p-4 flex-1 flex flex-col justify-between space-y-3 text-xs">
-                {/* Dietary & time tags */}
-                <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                  {item.is_jain ? (
-                    <span className="px-2 py-0.5 rounded-md bg-[#ECF7F0] text-[#1A4B29] font-bold border border-[#D1EBD9] flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> 100% Satvik Jain
-                    </span>
-                  ) : item.is_veg ? (
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">
-                      Pure Veg
                     </span>
                   ) : null}
 
-                  <span className="text-[#6B665E] flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-[#8C877E]" /> {item.preparation_time_minutes} min
-                  </span>
-
-                  <span className="text-[#6B665E] flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-amber-600" /> Spice: {item.spicy_level}/3
-                  </span>
+                  {item.is_jain && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/40">
+                      100% Satvik Jain
+                    </span>
+                  )}
                 </div>
 
-                {/* Variants preview */}
-                <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#EAE6DF] space-y-1">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-[#6B665E]">{item.sizes.length} Portion Sizes:</span>
-                    <span className="font-bold text-[#1A1814]">From {formatINR(startingPrice)}</span>
+                <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#07111F]/90 text-[#E2C56B] border border-[#C9A24A]/40">
+                  Starts at {formatINR(startingPrice)}
+                </div>
+              </div>
+
+              {/* Product Info */}
+              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-serif text-base font-bold text-[#F5F1E8] leading-tight">
+                      {item.name}
+                    </h3>
                   </div>
-                  <div className="text-[10px] text-[#8C877E] truncate">
-                    {item.sizes.map((s) => `${s.name} (${formatINR(s.price)})`).join(' • ')}
+                  {item.tagline && (
+                    <p className="text-[11px] text-[#C9A24A] font-medium italic">{item.tagline}</p>
+                  )}
+                  <p className="text-xs text-[#AAB4C2] line-clamp-2 leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+
+                {/* Portion Sizes Pill List */}
+                <div className="pt-2 border-t border-[#1C2D4A] space-y-1.5">
+                  <span className="text-[10px] font-bold text-[#7E8B9B] uppercase block">
+                    Available Portions
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(item.sizes || []).map((s, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-1 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-[11px] font-semibold text-[#F5F1E8]"
+                      >
+                        {s.portion || s.name}: <strong className="text-[#E2C56B]">{formatINR(s.price)}</strong>
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="pt-2 flex items-center justify-between border-t border-[#F2EFE8]">
-                  <span className="text-[11px] text-[#6B665E] font-medium capitalize">
-                    Cat: {categories.find((c) => c.id === item.category)?.label || item.category}
-                  </span>
+                {/* Card Controls */}
+                <div className="pt-3 border-t border-[#1C2D4A] flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSoldOut(item)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-[#101F35] hover:bg-rose-950/40 text-[#AAB4C2] hover:text-rose-300 border border-[#1C2D4A]'
+                        : 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-500/40'
+                    }`}
+                  >
+                    {isActive ? (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Mark Sold Out</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Mark Active</span>
+                      </>
+                    )}
+                  </button>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
+                      type="button"
                       onClick={() => handleOpenEdit(item)}
-                      className="p-1.5 rounded-lg bg-[#FAF5E8] hover:bg-[#F2EFE8] text-[#9E7422] font-bold transition cursor-pointer"
-                      title="Edit Product"
+                      className="p-2 rounded-xl bg-[#101F35] hover:bg-[#1C2D4A] border border-[#1C2D4A] text-[#E2C56B] transition cursor-pointer"
+                      title="Edit Dish"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleDelete(item)}
-                      className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold transition cursor-pointer"
-                      title="Delete Product"
+                      className="p-2 rounded-xl bg-[#101F35] hover:bg-rose-950/50 border border-[#1C2D4A] text-rose-400 transition cursor-pointer"
+                      title="Delete Dish"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -407,104 +466,148 @@ export default function ProductsTab({
         })}
       </div>
 
-      {/* Add / Edit Modal */}
+      {/* 4. ADD / EDIT PRODUCT MODAL WITH PREVIEW */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl border border-[#EAE6DF] shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#0A1628] border border-[#1C2D4A] rounded-3xl shadow-2xl overflow-hidden my-4 sm:my-8 text-[#F5F1E8] max-h-[92vh] flex flex-col">
             {/* Modal Header */}
-            <div className="p-5 border-b border-[#EAE6DF] flex items-center justify-between bg-[#FAF8F5]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#FAF5E8] border border-[#E9DCBF] text-[#9E7422] flex items-center justify-center font-bold">
-                  <UtensilsCrossed className="w-5 h-5" />
+            <div className="p-4 sm:p-6 bg-[#07111F] border-b border-[#1C2D4A] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#101F35] border border-[#C9A24A]/40 flex items-center justify-center text-[#E2C56B]">
+                  <UtensilsCrossed className="w-4 h-4 text-[#C9A24A]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#1A1814]">
-                    {editingItem ? `Edit Dish: ${editingItem.name}` : 'Add New Dish to Menu'}
+                  <h3 className="font-serif text-base sm:text-lg font-bold text-[#F5F1E8]">
+                    {editingItem ? `Edit: ${editingItem.name}` : 'Add New Royal Dish'}
                   </h3>
-                  <p className="text-xs text-[#6B665E]">
-                    Fill in dish name, description, portion sizes, prices, and imagery
-                  </p>
+                  <p className="text-xs text-[#AAB4C2]">Direct sync with Supabase catalog &amp; storage</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 rounded-xl text-[#8C877E] hover:text-[#1A1814] hover:bg-[#F2EFE8] transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    isPreviewOpen
+                      ? 'bg-[#C9A24A] text-[#07111F] border-[#C9A24A]'
+                      : 'bg-[#101F35] text-[#E2C56B] border-[#1C2D4A]'
+                  }`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{isPreviewOpen ? 'Hide Preview' : 'Preview Card'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-1.5 rounded-xl bg-[#101F35] text-[#AAB4C2] hover:text-white transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Modal Form */}
-            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
+            {/* Live Preview Strip */}
+            {isPreviewOpen && (
+              <div className="p-4 bg-[#07111F] border-b border-[#1C2D4A] shrink-0">
+                <p className="text-[10px] font-bold text-[#C9A24A] uppercase tracking-wider mb-2">
+                  Live Public Website Preview:
+                </p>
+                <div className="max-w-sm mx-auto rounded-2xl bg-[#0A1628] border border-[#1C2D4A] p-4 flex gap-3 shadow-xl">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-[#07111F] shrink-0">
+                    <img
+                      src={resolveImageUrl(formData.image_url, formData.images)}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1 text-xs">
+                    <h4 className="font-bold text-[#F5F1E8]">{formData.name || 'Dish Name Preview'}</h4>
+                    <p className="text-[11px] text-[#C9A24A] italic">{formData.tagline || 'Royal Tagline'}</p>
+                    <p className="text-[10px] text-[#AAB4C2] line-clamp-1">{formData.description || 'Description...'}</p>
+                    <p className="text-xs font-bold text-[#E2C56B] pt-1">
+                      From {formatINR(Math.min(...(formData.sizes || [{ price: 299 }]).map((s) => s.price)))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Form Scroll Body */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Dish Name */}
-                <div className="space-y-1 sm:col-span-2">
-                  <label className="font-bold text-[#1A1814]">Dish Name *</label>
+                <div className="space-y-1">
+                  <label className="font-bold text-[#F5F1E8]">Dish Name *</label>
                   <input
                     type="text"
                     required
                     value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Royal Shahi Dum Biryani Handi"
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition"
-                  />
-                </div>
-
-                {/* Tagline */}
-                <div className="space-y-1 sm:col-span-2">
-                  <label className="font-bold text-[#1A1814]">Short Tagline</label>
-                  <input
-                    type="text"
-                    value={formData.tagline || ''}
-                    onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                    placeholder="e.g. Clay oven steamed with pure saffron & aged Basmati"
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition"
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="space-y-1 sm:col-span-2">
-                  <label className="font-bold text-[#1A1814]">Detailed Description</label>
-                  <textarea
-                    rows={2}
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Detailed ingredients and preparation details..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition"
+                    placeholder="e.g. Royal Shahi Veg Dum Biryani"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] focus:outline-none focus:border-[#C9A24A]"
                   />
                 </div>
 
                 {/* Category */}
                 <div className="space-y-1">
-                  <label className="font-bold text-[#1A1814]">Category</label>
+                  <label className="font-bold text-[#F5F1E8]">Category *</label>
                   <select
-                    value={formData.category || 'royal-biryani'}
+                    value={formData.category || 'biryani'}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition cursor-pointer"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] focus:outline-none focus:border-[#C9A24A] cursor-pointer"
                   >
                     {categories
                       .filter((c) => c.id !== 'all')
                       .map((c) => (
-                        <option key={c.id} value={c.id}>
+                        <option key={c.id} value={c.id} className="bg-[#0A1628]">
                           {c.label}
                         </option>
                       ))}
                   </select>
                 </div>
 
-                {/* Badge text */}
-                <div className="space-y-1">
-                  <label className="font-bold text-[#1A1814]">Special Badge (Optional)</label>
+                {/* Tagline */}
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="font-bold text-[#F5F1E8]">Royal Tagline (Subtitle)</label>
+                  <input
+                    type="text"
+                    value={formData.tagline || ''}
+                    onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
+                    placeholder="e.g. Aromatic aged basmati slow-dummed with fresh saffron & garden herbs"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] focus:outline-none focus:border-[#C9A24A]"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="font-bold text-[#F5F1E8]">Full Culinary Description</label>
+                  <textarea
+                    rows={3}
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe authentic charcoal dum technique, spices, aromas..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] focus:outline-none focus:border-[#C9A24A]"
+                  />
+                </div>
+
+                {/* Highlight Badge */}
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="font-bold text-[#F5F1E8]">Highlight Ribbon Badge</label>
                   <input
                     type="text"
                     value={formData.badge || ''}
                     onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
-                    placeholder="e.g. Chef's Signature, 100% Satvik"
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition"
+                    placeholder="e.g. Chef's Signature, Best Seller, Satvik Special"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] focus:outline-none focus:border-[#C9A24A]"
                   />
                 </div>
 
-                {/* Multi Image Upload Field */}
+                {/* Multi Image Upload Field (Supabase Storage) */}
                 <div className="sm:col-span-2">
                   <MultiImageUploadField
                     primaryImage={formData.image_url || ''}
@@ -521,9 +624,9 @@ export default function ProductsTab({
                   />
                 </div>
 
-                {/* Prep time & Spice Level */}
+                {/* Prep time & Spiciness */}
                 <div className="space-y-1">
-                  <label className="font-bold text-[#1A1814]">Prep Time (Minutes)</label>
+                  <label className="font-bold text-[#F5F1E8]">Preparation Time (Minutes)</label>
                   <input
                     type="number"
                     min={5}
@@ -532,35 +635,35 @@ export default function ProductsTab({
                     onChange={(e) =>
                       setFormData({ ...formData, preparation_time_minutes: Number(e.target.value) })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] focus:outline-none focus:border-[#C9A24A]"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-[#1A1814]">Spiciness Level (1 to 3)</label>
+                  <label className="font-bold text-[#F5F1E8]">Spiciness Level (1 to 3)</label>
                   <select
                     value={formData.spicy_level || 2}
                     onChange={(e) =>
                       setFormData({ ...formData, spicy_level: Number(e.target.value) as 1 | 2 | 3 })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#FAF8F5] border border-[#DDD8CE] text-xs text-[#1A1814] focus:outline-none focus:border-[#C59A3F] focus:bg-white transition cursor-pointer"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-xs text-[#F5F1E8] focus:outline-none focus:border-[#C9A24A] cursor-pointer"
                   >
-                    <option value={1}>1 - Mild & Royal Sweet Fragrance</option>
-                    <option value={2}>2 - Medium Balanced Spices</option>
-                    <option value={3}>3 - Robust & Spicy</option>
+                    <option value={1} className="bg-[#0A1628]">1 - Mild &amp; Royal Sweet Fragrance</option>
+                    <option value={2} className="bg-[#0A1628]">2 - Medium Balanced Spices</option>
+                    <option value={3} className="bg-[#0A1628]">3 - Robust &amp; Spicy</option>
                   </select>
                 </div>
 
-                {/* Dietary Checks */}
-                <div className="flex items-center gap-6 sm:col-span-2 pt-1">
+                {/* Dietary Checks & Availability */}
+                <div className="sm:col-span-2 pt-2 flex flex-wrap gap-4 border-t border-[#1C2D4A]">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={Boolean(formData.is_veg)}
                       onChange={(e) => setFormData({ ...formData, is_veg: e.target.checked })}
-                      className="rounded border-[#DDD8CE] text-[#1A4B29] focus:ring-[#1A4B29]"
+                      className="rounded border-[#1C2D4A] text-emerald-500 focus:ring-0"
                     />
-                    <span className="font-bold text-[#1A1814]">Pure Vegetarian</span>
+                    <span className="font-bold text-[#F5F1E8]">Pure Vegetarian</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -568,9 +671,9 @@ export default function ProductsTab({
                       type="checkbox"
                       checked={Boolean(formData.is_jain)}
                       onChange={(e) => setFormData({ ...formData, is_jain: e.target.checked })}
-                      className="rounded border-[#DDD8CE] text-[#1A4B29] focus:ring-[#1A4B29]"
+                      className="rounded border-[#1C2D4A] text-emerald-500 focus:ring-0"
                     />
-                    <span className="font-bold text-[#1A4B29] flex items-center gap-1">
+                    <span className="font-bold text-emerald-400 flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" /> 100% Satvik Jain (No Root Veg)
                     </span>
                   </label>
@@ -580,87 +683,113 @@ export default function ProductsTab({
                       type="checkbox"
                       checked={Boolean(formData.popular)}
                       onChange={(e) => setFormData({ ...formData, popular: e.target.checked })}
-                      className="rounded border-[#DDD8CE] text-[#C59A3F] focus:ring-[#C59A3F]"
+                      className="rounded border-[#1C2D4A] text-[#C9A24A] focus:ring-0"
                     />
-                    <span className="font-bold text-[#8C6418]">Featured / Best Seller</span>
+                    <span className="font-bold text-[#E2C56B]">Featured / Best Seller</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active !== false}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="rounded border-[#1C2D4A] text-emerald-500 focus:ring-0"
+                    />
+                    <span className="font-bold text-[#F5F1E8]">Available for Order (Uncheck to Mark Sold Out)</span>
                   </label>
                 </div>
               </div>
 
-              {/* Portion Sizes / Variants Table */}
-              <div className="space-y-3 pt-4 border-t border-[#EAE6DF]">
-                <div className="flex items-center justify-between">
+              {/* 5. PORTION SIZES & WEIGHTS (500g and 1kg presets) */}
+              <div className="space-y-3 pt-4 border-t border-[#1C2D4A]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <h4 className="font-bold text-[#1A1814] uppercase tracking-wider text-[11px]">
-                      Portion Sizes & Pricing
+                    <h4 className="font-bold text-[#E2C56B] uppercase tracking-wider text-[11px]">
+                      Portion Sizes &amp; Pricing (500g / 1kg)
                     </h4>
-                    <p className="text-[11px] text-[#6B665E]">
-                      Define Handi weight, serves count, and unit price in INR
+                    <p className="text-[11px] text-[#AAB4C2]">
+                      Add 500g Regular Handi, 1kg Family Feast, or custom portion variants
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddSizeRow}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF5E8] border border-[#E9DCBF] text-[#8C6418] text-xs font-bold hover:bg-[#F2EFE8] cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Add Size Variant</span>
-                  </button>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleAddSizePreset('500g')}
+                      className="px-2.5 py-1 rounded-lg bg-[#101F35] border border-[#1C2D4A] text-[11px] font-bold text-[#E2C56B] hover:bg-[#1C2D4A] cursor-pointer"
+                    >
+                      + 500g Preset
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddSizePreset('1kg')}
+                      className="px-2.5 py-1 rounded-lg bg-[#101F35] border border-[#1C2D4A] text-[11px] font-bold text-[#E2C56B] hover:bg-[#1C2D4A] cursor-pointer"
+                    >
+                      + 1kg Preset
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddSizeRow}
+                      className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C9A24A] to-[#B89033] text-[#07111F] text-[11px] font-bold cursor-pointer"
+                    >
+                      + Custom Size
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   {(formData.sizes || []).map((size, sIdx) => (
                     <div
                       key={sIdx}
-                      className="grid grid-cols-12 gap-2 p-3 bg-[#FAF8F5] rounded-xl border border-[#EAE6DF] items-center"
+                      className="grid grid-cols-12 gap-2 p-3 bg-[#07111F] rounded-xl border border-[#1C2D4A] items-center text-xs"
                     >
                       <div className="col-span-4">
-                        <label className="text-[10px] font-semibold text-[#6B665E] block">Size Name</label>
+                        <label className="text-[10px] font-semibold text-[#7E8B9B] block">Size Name</label>
                         <input
                           type="text"
                           required
                           value={size.name}
                           onChange={(e) => handleSizeFieldChange(sIdx, 'name', e.target.value)}
-                          placeholder="e.g. Regular Handi"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#DDD8CE] text-xs text-[#1A1814]"
+                          placeholder="e.g. Regular Handi (500g)"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A1628] border border-[#1C2D4A] text-xs text-[#F5F1E8]"
                         />
                       </div>
                       <div className="col-span-3">
-                        <label className="text-[10px] font-semibold text-[#6B665E] block">Portion / Wt</label>
+                        <label className="text-[10px] font-semibold text-[#7E8B9B] block">Weight / Port</label>
                         <input
                           type="text"
                           value={size.portion}
                           onChange={(e) => handleSizeFieldChange(sIdx, 'portion', e.target.value)}
-                          placeholder="e.g. 500g"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#DDD8CE] text-xs text-[#1A1814]"
+                          placeholder="500g"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A1628] border border-[#1C2D4A] text-xs text-[#F5F1E8]"
                         />
                       </div>
                       <div className="col-span-2">
-                        <label className="text-[10px] font-semibold text-[#6B665E] block">Serves</label>
+                        <label className="text-[10px] font-semibold text-[#7E8B9B] block">Serves</label>
                         <input
                           type="text"
                           value={size.serves}
                           onChange={(e) => handleSizeFieldChange(sIdx, 'serves', e.target.value)}
                           placeholder="1-2"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#DDD8CE] text-xs text-[#1A1814]"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A1628] border border-[#1C2D4A] text-xs text-[#F5F1E8]"
                         />
                       </div>
                       <div className="col-span-2">
-                        <label className="text-[10px] font-semibold text-[#6B665E] block">Price (₹)</label>
+                        <label className="text-[10px] font-semibold text-[#7E8B9B] block">Price (₹)</label>
                         <input
                           type="number"
                           min={1}
                           required
                           value={size.price}
                           onChange={(e) => handleSizeFieldChange(sIdx, 'price', Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#DDD8CE] text-xs text-[#1A1814] font-bold"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A1628] border border-[#1C2D4A] text-xs text-[#E2C56B] font-bold"
                         />
                       </div>
-                      <div className="col-span-1 text-right pt-4">
+                      <div className="col-span-1 text-right pt-3">
                         <button
                           type="button"
                           onClick={() => handleRemoveSizeRow(sIdx)}
-                          className="p-1 rounded-lg text-rose-500 hover:bg-rose-100 transition cursor-pointer"
+                          className="p-1 rounded-lg text-rose-400 hover:bg-rose-950/40 transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -670,21 +799,21 @@ export default function ProductsTab({
                 </div>
               </div>
 
-              {/* Modal Footer Buttons */}
-              <div className="p-4 -mx-6 -mb-6 mt-6 border-t border-[#EAE6DF] bg-[#FAF8F5] flex items-center justify-end gap-3">
+              {/* Modal Submit Footer */}
+              <div className="p-4 -mx-6 -mb-6 mt-6 border-t border-[#1C2D4A] bg-[#07111F] flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white border border-[#DDD8CE] text-xs font-bold text-[#1A1814] hover:bg-[#F2EFE8] transition cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#101F35] text-[#AAB4C2] hover:text-[#F5F1E8] text-xs font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-xl bg-gradient-to-r from-[#C59A3F] to-[#9E7422] hover:from-[#B8860B] text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+                  className="px-6 py-2 rounded-xl bg-gradient-to-r from-[#C9A24A] to-[#B89033] hover:from-[#D4AF37] hover:to-[#C9A24A] text-[#07111F] text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Saving Dish...' : editingItem ? 'Update Dish' : 'Publish Dish'}
+                  {isSubmitting ? 'Saving Dish...' : editingItem ? 'Save Changes' : 'Publish Dish'}
                 </button>
               </div>
             </form>

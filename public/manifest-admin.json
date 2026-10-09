@@ -1,0 +1,42 @@
+{
+  "id": "/admin",
+  "name": "VEDIQ BIRYANI ADMIN",
+  "short_name": "Vediq Admin",
+  "description": "Official restaurant administration & real-time kitchen order dispatch system for Vediq Biryani.",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07111F",
+  "theme_color": "#07111F",
+  "icons": [
+    {
+      "src": "/admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/admin-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["business", "food", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Live Kitchen Orders",
+      "short_name": "Orders",
+      "description": "Quickly inspect new and active orders",
+      "url": "/admin",
+      "icons": [{ "src": "/admin-icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
