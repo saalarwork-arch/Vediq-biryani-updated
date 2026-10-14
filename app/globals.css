@@ -193,3 +193,68 @@ html.light ::-webkit-scrollbar-thumb:hover {
   animation: pulse-subtle 3s infinite ease-in-out;
 }
 
+/* ==========================================================================
+   SIMPLE WHITE ADMIN UI — VEDIQ BIRYANI ADMIN
+   Clean white background, dark readable text, light-grey borders, gold accents
+   ========================================================================== */
+.admin-app-wrapper {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+.admin-app-wrapper .bg-\[\#07111F\] {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+.admin-app-wrapper .bg-\[\#0A1628\] {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+.admin-app-wrapper .bg-\[\#101F35\] {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+.admin-app-wrapper .border-\[\#1C2D4A\] {
+  border-color: #E2E8F0 !important;
+}
+
+.admin-app-wrapper .text-\[\#F5F1E8\] {
+  color: #0F172A !important;
+}
+
+.admin-app-wrapper .text-\[\#AAB4C2\] {
+  color: #475569 !important;
+}
+
+.admin-app-wrapper .text-\[\#7E8B9B\] {
+  color: #64748B !important;
+}
+
+.admin-app-wrapper .text-\[\#E2C56B\] {
+  color: #B8860B !important;
+}
+
+.admin-app-wrapper .text-\[\#C9A24A\] {
+  color: #B8860B !important;
+}
+
+.admin-app-wrapper .border-\[\#C9A24A\] {
+  border-color: #D4AF37 !important;
+}
+
+.admin-app-wrapper ::-webkit-scrollbar-track {
+  background: #F8FAFC;
+}
+
+.admin-app-wrapper ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}
+
+.admin-app-wrapper ::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+

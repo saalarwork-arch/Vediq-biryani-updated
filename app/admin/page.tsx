@@ -654,6 +654,81 @@ export default function AdminPage() {
     }
   };
 
+  // Move Order to Recoverable Trash
+  const handleMoveToTrash = async (order: CustomerOrder) => {
+    try {
+      const nowIso = new Date().toISOString();
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, action: 'trash' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(`Failed to move order to trash: ${data.error || 'Unknown error'}`, 'error');
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, is_trashed: true, trashed_at: nowIso } : o))
+      );
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder((prev) => (prev ? { ...prev, is_trashed: true, trashed_at: nowIso } : null));
+      }
+      showToast(`Order #${order.order_number || order.id} moved to trash (Recoverable).`, 'info');
+    } catch (err: any) {
+      showToast(err?.message || 'Error moving order to trash', 'error');
+    }
+  };
+
+  // Restore Order from Trash
+  const handleRestoreFromTrash = async (order: CustomerOrder) => {
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, action: 'restore' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(`Failed to restore order: ${data.error || 'Unknown error'}`, 'error');
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, is_trashed: false, trashed_at: undefined } : o))
+      );
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder((prev) => (prev ? { ...prev, is_trashed: false, trashed_at: undefined } : null));
+      }
+      showToast(`Order #${order.order_number || order.id} restored to live queue.`, 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Error restoring order', 'error');
+    }
+  };
+
+  // Permanently Delete Order (Authorized Admins Only)
+  const handlePermanentDelete = async (order: CustomerOrder) => {
+    try {
+      const res = await fetch(`/api/admin/orders?id=${encodeURIComponent(order.id)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(`Failed to delete order: ${data.error || 'Unknown error'}`, 'error');
+        return;
+      }
+
+      setOrders((prev) => prev.filter((o) => o.id !== order.id));
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder(null);
+      }
+      showToast(`Order #${order.order_number || order.id} permanently deleted.`, 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Error permanently deleting order', 'error');
+    }
+  };
+
   // Mark all notifications as read
   const handleMarkAllNotificationsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -1144,6 +1219,9 @@ export default function AdminPage() {
               selectedOrder={selectedOrder}
               setSelectedOrder={setSelectedOrder}
               initialCategory={selectedCategoryFilter}
+              onMoveToTrash={handleMoveToTrash}
+              onPermanentDelete={handlePermanentDelete}
+              onRestoreFromTrash={handleRestoreFromTrash}
             />
           )}
 

@@ -26,6 +26,8 @@ import {
   ArrowRight,
   HelpCircle,
   Share2,
+  ExternalLink,
+  Navigation,
 } from 'lucide-react';
 import { CustomerOrder, OrderStatus } from '@/types/supabase';
 import { formatINR } from '@/lib/utils';
@@ -362,6 +364,50 @@ export default function OrderDetailModal({
                       <p className="font-mono font-bold text-[#E2C56B]">{order.pincode || '201012'}</p>
                     </div>
                   </div>
+
+                  {/* GPS Coordinates & Google Maps Link */}
+                  {order.latitude && order.longitude ? (
+                    <div className="p-2.5 rounded-xl bg-[#101F35] border border-[#1C2D4A] space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-[#C9A24A] uppercase flex items-center gap-1">
+                          <Navigation className="w-3 h-3 text-[#E2C56B]" />
+                          <span>GPS Pin Coordinates</span>
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          ✓ Delhi NCR Verified
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-mono text-[#AAB4C2]">
+                          {order.latitude.toFixed(5)}, {order.longitude.toFixed(5)}
+                        </span>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#E2C56B] hover:text-[#F5F1E8] font-bold flex items-center gap-1 transition underline"
+                        >
+                          <span>Open in Maps</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between text-[11px] pt-1">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        ✓ Delhi NCR Delivery
+                      </span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.full_address + ', ' + (order.city || 'Delhi NCR'))}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#E2C56B] hover:text-[#F5F1E8] font-bold flex items-center gap-1 transition text-xs"
+                      >
+                        <span>Search on Google Maps</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
 
                   {order.customer_notes && (
                     <div className="p-2.5 rounded-xl bg-[#101F35] border border-amber-500/20 text-xs text-[#E2C56B]">

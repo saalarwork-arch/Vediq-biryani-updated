@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from './providers';
+import GmpQuotaBanner from '@/components/GmpQuotaBanner';
 
 export const viewport: Viewport = {
   themeColor: '#07111F',
@@ -51,11 +52,27 @@ export default function RootLayout({
                   document.documentElement.classList.remove('light');
                 }
               } catch (e) {}
+
+              // Google Maps Platform Quota Defense Listener
+              try {
+                window.gm_authFailure = function() {
+                  window.dispatchEvent(new CustomEvent('gmp-quota-exceeded'));
+                };
+                var origError = console.error;
+                console.error = function() {
+                  origError.apply(console, arguments);
+                  var msg = Array.prototype.slice.call(arguments).map(function(a){ return String(a); }).join(' ');
+                  if (msg.indexOf('OverQuotaMapError') !== -1 || msg.indexOf('QuotaExceededError') !== -1) {
+                    window.dispatchEvent(new CustomEvent('gmp-quota-exceeded'));
+                  }
+                };
+              } catch (e) {}
             `,
           }}
         />
       </head>
       <body className="bg-[#07111F] text-[#F5F1E8] antialiased min-h-screen w-full max-w-full overflow-x-hidden selection:bg-[#C9A24A]/30 selection:text-[#F5F1E8] transition-colors duration-200">
+        <GmpQuotaBanner />
         <Providers>{children}</Providers>
       </body>
     </html>

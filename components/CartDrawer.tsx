@@ -1,14 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Check, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  ShoppingBag,
+  Check,
+  Sparkles,
+  MapPin,
+  Navigation,
+  Compass,
+  Home,
+  Briefcase,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  Bookmark,
+  ChevronRight,
+  Building,
+} from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useData } from '@/context/DataContext';
 import { EXTRA_ITEMS } from '@/data/menuData';
 import { formatINR } from '@/lib/utils';
 import { generateTrackingCode } from '@/lib/tracking';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
-import { CustomerOrder } from '@/types/supabase';
+import { CustomerOrder, SavedDeliveryAddress } from '@/types/supabase';
+import GoogleAddressAutocomplete, { AddressSelectionData } from '@/components/GoogleAddressAutocomplete';
+import { isCoordinateInDelhiNcr, DELHI_NCR_UNSUPPORTED_MESSAGE } from '@/lib/delhiNcrValidation';
+import LocationPickerModal from '@/components/LocationPickerModal';
+import SavedAddressesModal from '@/components/SavedAddressesModal';
+import { getSavedAddresses, reverseGeocodeCoordinates } from '@/lib/addressStorage';
 
 export default function CartDrawer() {
   const {
@@ -35,13 +60,157 @@ export default function CartDrawer() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [fullAddress, setFullAddress] = useState('');
+  const [houseBuilding, setHouseBuilding] = useState('');
+  const [roadArea, setRoadArea] = useState('');
+  const [landmark, setLandmark] = useState('');
   const [pincode, setPincode] = useState('');
+  const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [deliveryTime, setDeliveryTime] = useState('Standard (45-60 mins)');
   const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
   const [customerNotes, setCustomerNotes] = useState('');
 
+  // Delhi NCR Google Places validation state
+  const [addressSelection, setAddressSelection] = useState<AddressSelectionData | null>(null);
+  const [isDeliveryAreaValid, setIsDeliveryAreaValid] = useState<boolean | null>(null);
+
+  // Saved Addresses & Location Picker Modals State
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
+  const [savedAddressesList, setSavedAddressesList] = useState<SavedDeliveryAddress[]>([]);
+  const [activeSavedAddress, setActiveSavedAddress] = useState<SavedDeliveryAddress | null>(null);
+
+  // GPS Location Button State
+  const [isLocatingGPS, setIsLocatingGPS] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Load saved delivery addresses on open
+  useEffect(() => {
+    if (isCartOpen) {
+      getSavedAddresses().then((list) => {
+        setSavedAddressesList(list);
+        if (!activeSavedAddress && !fullAddress && list.length > 0) {
+          const defaultAddr = list.find((a) => a.is_default) || list[0];
+          applyAddressSelection(defaultAddr);
+        }
+      });
+    }
+  }, [isCartOpen]);
+
+  // Helper to apply a selected address
+  const applyAddressSelection = (addr: SavedDeliveryAddress) => {
+    setActiveSavedAddress(addr);
+    setFullAddress(addr.formatted_address);
+    setHouseBuilding(addr.house_building || '');
+    setRoadArea(addr.road_area_colony || '');
+    setLandmark(addr.landmark || '');
+    setPincode(addr.pincode || '');
+    if (addr.delivery_instructions) {
+      setDeliveryInstructions(addr.delivery_instructions);
+    }
+
+    const isValid = addr.is_delhi_ncr ?? isCoordinateInDelhiNcr(addr.latitude, addr.longitude);
+    setIsDeliveryAreaValid(isValid);
+
+    setAddressSelection({
+      fullAddress: addr.formatted_address,
+      lat: addr.latitude,
+      lng: addr.longitude,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
+      isValidDeliveryArea: isValid,
+    });
+
+    if (!isValid) {
+      setFormError(DELHI_NCR_UNSUPPORTED_MESSAGE);
+    } else {
+      setFormError('');
+    }
+  };
+
+  // Prominent "Use My Current Location" Handler (Tapped explicitly by customer)
+  const handleUseCurrentLocation = () => {
+    setGpsError(null);
+    setFormError('');
+
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setGpsError('Geolocation is not supported by your browser. Please select your address on the map.');
+      return;
+    }
+
+    setIsLocatingGPS(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        try {
+          const geo = await reverseGeocodeCoordinates(lat, lng);
+          const isValid = isCoordinateInDelhiNcr(lat, lng);
+
+          setIsDeliveryAreaValid(isValid);
+          setAddressSelection({
+            fullAddress: geo.formatted_address,
+            lat,
+            lng,
+            city: geo.city,
+            state: geo.state,
+            pincode: geo.pincode,
+            isValidDeliveryArea: isValid,
+          });
+
+          setFullAddress(geo.formatted_address);
+          if (geo.road_area_colony) setRoadArea(geo.road_area_colony);
+          if (geo.pincode) setPincode(geo.pincode);
+
+          setActiveSavedAddress({
+            id: `current-gps-${Date.now()}`,
+            tag: 'Other',
+            custom_tag: 'Current GPS Location',
+            house_building: '',
+            road_area_colony: geo.road_area_colony || '',
+            city: geo.city || 'Delhi NCR',
+            state: geo.state || 'Delhi',
+            pincode: geo.pincode || '110001',
+            formatted_address: geo.formatted_address,
+            latitude: lat,
+            longitude: lng,
+            is_delhi_ncr: isValid,
+            created_at: new Date().toISOString(),
+          });
+
+          if (!isValid) {
+            setFormError(DELHI_NCR_UNSUPPORTED_MESSAGE);
+          } else {
+            setFormError('');
+          }
+        } catch (err: any) {
+          setGpsError('Failed to fetch address for current coordinates. Please select your location on the map.');
+        } finally {
+          setIsLocatingGPS(false);
+        }
+      },
+      (err) => {
+        setIsLocatingGPS(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setGpsError('Location permission denied. Please search your address or drop a pin manually on the map.');
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setGpsError('GPS location unavailable. Please pick your address manually on the map.');
+        } else {
+          setGpsError('Unable to detect GPS location. Please pick your address on the map.');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
 
   if (!isCartOpen) return null;
 
@@ -96,45 +265,63 @@ export default function CartDrawer() {
     };
 
     try {
+      // Frontend check against Delhi NCR boundary
+      if (isDeliveryAreaValid === false) {
+        setFormError(DELHI_NCR_UNSUPPORTED_MESSAGE);
+        setIsSubmitting(false);
+        return;
+      }
+
       let finalOrderData = newOrder;
 
-      if (isSupabaseConfigured()) {
-        try {
-          const { data: directData, error } = await supabase.from('orders').insert([
-            {
-              order_number: newOrder.order_number,
-              customer_name: newOrder.customer_name,
-              phone: newOrder.phone,
-              email: newOrder.email,
-              full_address: newOrder.full_address,
-              house_building: newOrder.house_building || null,
-              road_area_colony: newOrder.road_area_colony || null,
-              city: newOrder.city || 'Ghaziabad',
-              state: newOrder.state || 'Uttar Pradesh',
-              pincode: newOrder.pincode || '201012',
-              delivery_date: newOrder.delivery_date || null,
-              delivery_time: newOrder.delivery_time,
-              items: newOrder.items,
-              extras: newOrder.extras,
-              complimentary_items: newOrder.complimentary_items,
-              subtotal: newOrder.subtotal,
-              delivery_charge: newOrder.delivery_charge,
-              discount: newOrder.discount,
-              total: newOrder.total,
-              order_status: newOrder.order_status,
-              payment_method: newOrder.payment_method,
-              payment_status: newOrder.payment_status,
-              customer_notes: newOrder.customer_notes,
-            },
-          ]).select().maybeSingle();
+      // 1. Submit through backend API route for strict server-side Delhi NCR validation
+      const combinedNotes = [
+        deliveryInstructions.trim() ? `Valet: ${deliveryInstructions.trim()}` : '',
+        customerNotes.trim() ? `Note: ${customerNotes.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | ');
 
-          if (error) {
-            console.warn('Supabase order insert warning:', error.message);
-          } else if (directData) {
-            finalOrderData = directData as CustomerOrder;
-          }
-        } catch (dbErr) {
-          console.warn('[CartDrawer] Direct Supabase insert exception:', dbErr);
+      const orderPayload = {
+        ...newOrder,
+        latitude: addressSelection?.lat || activeSavedAddress?.latitude,
+        longitude: addressSelection?.lng || activeSavedAddress?.longitude,
+        house_building: houseBuilding.trim() || activeSavedAddress?.house_building,
+        road_area_colony: roadArea.trim() || activeSavedAddress?.road_area_colony,
+        city: addressSelection?.city || activeSavedAddress?.city || 'Delhi NCR',
+        state: addressSelection?.state || activeSavedAddress?.state || 'Delhi',
+        pincode: pincode.trim() || addressSelection?.pincode || activeSavedAddress?.pincode || '110001',
+        full_address: fullAddress.trim(),
+        customer_notes: combinedNotes || undefined,
+        is_delhi_ncr: true,
+      };
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const resData = await res.json();
+
+      if (!res.ok) {
+        setFormError(resData.error || DELHI_NCR_UNSUPPORTED_MESSAGE);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (resData.order) {
+        finalOrderData = resData.order as CustomerOrder;
+      } else if (isSupabaseConfigured()) {
+        try {
+          const { data: directData } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('order_number', newOrder.order_number)
+            .maybeSingle();
+          if (directData) finalOrderData = directData as CustomerOrder;
+        } catch {
+          // ignore
         }
       }
 
@@ -373,16 +560,232 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[#F5F1E8] font-bold mb-1">Delivery Address *</label>
-                    <textarea
-                      required
-                      rows={2}
-                      value={fullAddress}
-                      onChange={(e) => setFullAddress(e.target.value)}
-                      placeholder="House/Flat No, Landmark, Society/Street"
-                      className="w-full px-3 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-[#F5F1E8] placeholder-[#7E8B9B] focus:outline-none focus:border-[#C9A24A] focus:bg-[#101F35] shadow-xs"
-                    />
+                  {/* Smart Delivery Address Section (Swiggy / Zomato Style) */}
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[#F5F1E8] font-bold text-xs flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#C9A24A]" />
+                        <span>Delivery Address (Delhi NCR Only) *</span>
+                      </label>
+                      {isDeliveryAreaValid === true && (
+                        <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Delhi NCR Verified</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* GPS Error Banner */}
+                    {gpsError && (
+                      <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                        <div className="space-y-0.5">
+                          <p>{gpsError}</p>
+                          <button
+                            type="button"
+                            onClick={() => setIsLocationModalOpen(true)}
+                            className="text-[11px] font-bold text-[#E2C56B] underline hover:text-white"
+                          >
+                            Open Map &amp; Search Address Instead
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Primary Location Action Buttons */}
+                    <div className="space-y-2">
+                      {/* 1. Prominent "Use My Current Location" Button */}
+                      <button
+                        type="button"
+                        onClick={handleUseCurrentLocation}
+                        disabled={isLocatingGPS}
+                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#C9A24A]/20 to-amber-500/15 hover:from-amber-500/25 hover:to-[#C9A24A]/30 border border-[#C9A24A]/60 hover:border-[#C9A24A] text-[#F5F1E8] font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98 disabled:opacity-50"
+                      >
+                        {isLocatingGPS ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-[#E2C56B]" />
+                            <span>Detecting your GPS location...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Navigation className="w-4 h-4 text-[#E2C56B] animate-pulse" />
+                            <span>Use My Current Location (GPS)</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* 2. Map Pin & Saved Addresses Buttons */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsLocationModalOpen(true)}
+                          className="py-2 px-3 rounded-xl bg-[#07111F] hover:bg-[#101F35] border border-[#1C2D4A] hover:border-[#C9A24A]/50 text-xs font-bold text-[#AAB4C2] hover:text-[#F5F1E8] transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        >
+                          <Compass className="w-3.5 h-3.5 text-[#C9A24A]" />
+                          <span>Pick on Map / Search</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsSavedModalOpen(true)}
+                          className="py-2 px-3 rounded-xl bg-[#07111F] hover:bg-[#101F35] border border-[#1C2D4A] hover:border-[#C9A24A]/50 text-xs font-bold text-[#AAB4C2] hover:text-[#F5F1E8] transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        >
+                          <Bookmark className="w-3.5 h-3.5 text-[#E2C56B]" />
+                          <span>
+                            Saved Addresses
+                            {savedAddressesList.length > 0 && ` (${savedAddressesList.length})`}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Confirmed Delivery Address Card (Swiggy / Zomato Style) */}
+                    {fullAddress ? (
+                      <div className="p-3.5 rounded-2xl bg-[#07111F] border border-[#1C2D4A] space-y-2.5 text-xs shadow-inner">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-md bg-[#C9A24A]/20 text-[#E2C56B] text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 border border-[#C9A24A]/30">
+                              {activeSavedAddress?.tag === 'Home' ? (
+                                <Home className="w-2.5 h-2.5" />
+                              ) : activeSavedAddress?.tag === 'Work' ? (
+                                <Briefcase className="w-2.5 h-2.5" />
+                              ) : (
+                                <MapPin className="w-2.5 h-2.5" />
+                              )}
+                              <span>{activeSavedAddress?.custom_tag || activeSavedAddress?.tag || 'Delivery Pin'}</span>
+                            </span>
+
+                            {isDeliveryAreaValid === true ? (
+                              <span className="text-[10px] font-bold text-emerald-400">
+                                ✓ Delhi NCR
+                              </span>
+                            ) : isDeliveryAreaValid === false ? (
+                              <span className="text-[10px] font-bold text-red-400 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" />
+                                <span>Outside Service Area</span>
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setIsLocationModalOpen(true)}
+                            className="text-[11px] font-bold text-[#E2C56B] hover:text-white underline cursor-pointer"
+                          >
+                            Change Pin
+                          </button>
+                        </div>
+
+                        {/* Complete Address Text */}
+                        <div className="space-y-0.5">
+                          {houseBuilding && (
+                            <p className="font-bold text-sm text-[#F5F1E8] leading-tight">
+                              {houseBuilding}
+                            </p>
+                          )}
+                          <p className="text-[#AAB4C2] leading-relaxed text-xs">
+                            {fullAddress}
+                          </p>
+                        </div>
+
+                        {/* Coordinates & Landmark Badges */}
+                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#1C2D4A]/80 text-[11px]">
+                          {(addressSelection?.lat || activeSavedAddress?.latitude) && (
+                            <span className="text-[#7E8B9B] font-mono text-[10px] flex items-center gap-1 bg-[#101F35] px-2 py-0.5 rounded-md border border-[#1C2D4A]">
+                              <Navigation className="w-2.5 h-2.5 text-[#E2C56B]" />
+                              <span>
+                                GPS:{' '}
+                                {(addressSelection?.lat || activeSavedAddress?.latitude)?.toFixed(4)},{' '}
+                                {(addressSelection?.lng || activeSavedAddress?.longitude)?.toFixed(4)}
+                              </span>
+                            </span>
+                          )}
+
+                          {landmark && (
+                            <span className="text-[#AAB4C2] text-[10px]">
+                              Near: <span className="text-[#F5F1E8] font-semibold">{landmark}</span>
+                            </span>
+                          )}
+
+                          {deliveryInstructions && (
+                            <p className="w-full text-amber-300 text-[11px] italic bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20">
+                              Valet note: &ldquo;{deliveryInstructions}&rdquo;
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Address Search Autocomplete Input when no address picked yet */
+                      <div>
+                        <GoogleAddressAutocomplete
+                          value={fullAddress}
+                          onChange={setFullAddress}
+                          onAddressSelect={(data) => {
+                            setAddressSelection(data);
+                            setIsDeliveryAreaValid(data.isValidDeliveryArea);
+                            if (data.pincode && !pincode) {
+                              setPincode(data.pincode);
+                            }
+                            if (!data.isValidDeliveryArea) {
+                              setFormError(DELHI_NCR_UNSUPPORTED_MESSAGE);
+                            } else {
+                              setFormError('');
+                            }
+                          }}
+                          onValidationChange={(isValid) => {
+                            setIsDeliveryAreaValid(isValid);
+                            if (!isValid) {
+                              setFormError(DELHI_NCR_UNSUPPORTED_MESSAGE);
+                            } else {
+                              setFormError('');
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Detailed House/Flat and Valet Inputs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <div>
+                        <label className="block text-[#AAB4C2] text-[11px] font-semibold mb-1">
+                          House / Flat / Floor / Building *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={houseBuilding}
+                          onChange={(e) => setHouseBuilding(e.target.value)}
+                          placeholder="e.g. Flat 402, Tower C"
+                          className="w-full px-3 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-[#F5F1E8] placeholder-[#7E8B9B] focus:outline-none focus:border-[#C9A24A] focus:bg-[#101F35] shadow-xs text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[#AAB4C2] text-[11px] font-semibold mb-1">
+                          Nearby Landmark (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={landmark}
+                          onChange={(e) => setLandmark(e.target.value)}
+                          placeholder="e.g. Near Metro Gate 3"
+                          className="w-full px-3 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-[#F5F1E8] placeholder-[#7E8B9B] focus:outline-none focus:border-[#C9A24A] focus:bg-[#101F35] shadow-xs text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[#AAB4C2] text-[11px] font-semibold mb-1">
+                        Delivery Instructions for Valet (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={deliveryInstructions}
+                        onChange={(e) => setDeliveryInstructions(e.target.value)}
+                        placeholder="e.g. Ring bell, leave with security guard, do not call"
+                        className="w-full px-3 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-[#F5F1E8] placeholder-[#7E8B9B] focus:outline-none focus:border-[#C9A24A] focus:bg-[#101F35] shadow-xs text-xs"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -392,7 +795,7 @@ export default function CartDrawer() {
                         type="text"
                         value={pincode}
                         onChange={(e) => setPincode(e.target.value)}
-                        placeholder="e.g. 380015"
+                        placeholder="e.g. 110001"
                         className="w-full px-3 py-2 rounded-xl bg-[#07111F] border border-[#1C2D4A] text-[#F5F1E8] placeholder-[#7E8B9B] focus:outline-none focus:border-[#C9A24A] focus:bg-[#101F35] shadow-xs"
                       />
                     </div>
@@ -473,11 +876,13 @@ export default function CartDrawer() {
             <button
               type="submit"
               form="cart-checkout-form"
-              disabled={isSubmitting}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#C9A24A] to-[#B89033] hover:from-[#D4AF37] hover:to-[#C9A24A] disabled:opacity-50 text-[#07111F] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(201,162,74,0.3)] active:scale-98 cursor-pointer"
+              disabled={isSubmitting || isDeliveryAreaValid === false || !fullAddress.trim()}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#C9A24A] to-[#B89033] hover:from-[#D4AF37] hover:to-[#C9A24A] disabled:opacity-50 disabled:cursor-not-allowed text-[#07111F] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(201,162,74,0.3)] active:scale-98 cursor-pointer"
             >
               {isSubmitting ? (
                 <span>Placing Royal Order...</span>
+              ) : isDeliveryAreaValid === false ? (
+                <span>Delhi NCR Delivery Only</span>
               ) : (
                 <>
                   <span>Place Order • {formatINR(grandTotal)}</span>
@@ -488,6 +893,41 @@ export default function CartDrawer() {
           </div>
         )}
       </div>
+
+      {/* Interactive Location Picker Modal (Google Maps + Draggable Pin + Form) */}
+      {isLocationModalOpen && (
+        <LocationPickerModal
+          isOpen={isLocationModalOpen}
+          onClose={() => setIsLocationModalOpen(false)}
+          initialAddress={activeSavedAddress}
+          onAddressConfirmed={(addr) => {
+            applyAddressSelection(addr);
+            // Refresh saved addresses
+            getSavedAddresses().then((list) => setSavedAddressesList(list));
+          }}
+        />
+      )}
+
+      {/* Saved Addresses Modal */}
+      {isSavedModalOpen && (
+        <SavedAddressesModal
+          isOpen={isSavedModalOpen}
+          onClose={() => setIsSavedModalOpen(false)}
+          currentSelectedId={activeSavedAddress?.id}
+          onSelectAddress={(addr) => {
+            applyAddressSelection(addr);
+          }}
+          onAddNewAddress={() => {
+            setIsSavedModalOpen(false);
+            setIsLocationModalOpen(true);
+          }}
+          onEditAddress={(addr) => {
+            setActiveSavedAddress(addr);
+            setIsSavedModalOpen(false);
+            setIsLocationModalOpen(true);
+          }}
+        />
+      )}
     </div>
   );
 }

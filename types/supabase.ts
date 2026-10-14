@@ -213,6 +213,11 @@ export interface CustomerOrder {
   status_history?: { status: OrderStatus; timestamp: string; note?: string }[];
   notify_email?: boolean;
   notification_email?: string;
+  latitude?: number;
+  longitude?: number;
+  is_delhi_ncr?: boolean;
+  is_trashed?: boolean;
+  trashed_at?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -224,5 +229,27 @@ export interface ReviewItem {
   review: string;
   is_approved: boolean;
   created_at?: string;
+  updated_at?: string;
+}
+
+export type AddressTag = 'Home' | 'Work' | 'Other';
+
+export interface SavedDeliveryAddress {
+  id: string;
+  tag: AddressTag;
+  custom_tag?: string;
+  house_building: string;
+  road_area_colony: string;
+  landmark?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  formatted_address: string;
+  latitude: number;
+  longitude: number;
+  delivery_instructions?: string;
+  is_default?: boolean;
+  is_delhi_ncr?: boolean;
+  created_at: string;
   updated_at?: string;
 }

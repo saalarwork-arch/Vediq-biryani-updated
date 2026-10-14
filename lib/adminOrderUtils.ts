@@ -8,7 +8,8 @@ export type AdminOrderCategory =
   | 'ready'
   | 'out_for_delivery'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'trash';
 
 export interface OrderCategoryConfig {
   key: AdminOrderCategory;
@@ -108,12 +109,27 @@ export const ORDER_CATEGORIES: OrderCategoryConfig[] = [
     badgeBorder: 'border-rose-500/30',
     accentColor: '#EF4444',
   },
+  {
+    key: 'trash',
+    label: 'Trash / Deleted Orders',
+    shortLabel: 'Trash',
+    description: 'Deleted orders moved to recoverable trash.',
+    dbStatus: 'cancelled',
+    matchingStatuses: ['trashed', 'deleted'],
+    badgeBg: 'bg-gray-200',
+    badgeText: 'text-gray-700',
+    badgeBorder: 'border-gray-300',
+    accentColor: '#6B7280',
+  },
 ];
 
 /**
  * Returns which category an order belongs to based on its current status
  */
 export function getOrderCategory(order: CustomerOrder): AdminOrderCategory {
+  if (order.is_trashed) {
+    return 'trash';
+  }
   const status = (order.order_status || 'pending').toLowerCase();
   for (const cat of ORDER_CATEGORIES) {
     if (cat.matchingStatuses.includes(status)) {

@@ -31,6 +31,9 @@ import {
   DollarSign,
   Sparkles,
   Package,
+  Trash2,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 import { CustomerOrder, OrderStatus } from '@/types/supabase';
 import { formatINR } from '@/lib/utils';
@@ -45,6 +48,7 @@ import {
 } from '@/lib/adminOrderUtils';
 import OrderDetailModal from './OrderDetailModal';
 import OrderReceiptModal from './OrderReceiptModal';
+import AdminDeleteOrderModal from './AdminDeleteOrderModal';
 
 interface OrdersTabProps {
   orders: CustomerOrder[];
@@ -55,6 +59,9 @@ interface OrdersTabProps {
   selectedOrder: CustomerOrder | null;
   setSelectedOrder: (order: CustomerOrder | null) => void;
   initialCategory?: AdminOrderCategory | 'all';
+  onMoveToTrash?: (order: CustomerOrder) => Promise<void>;
+  onPermanentDelete?: (order: CustomerOrder) => Promise<void>;
+  onRestoreFromTrash?: (order: CustomerOrder) => Promise<void>;
 }
 
 export default function OrdersTab({
@@ -66,6 +73,9 @@ export default function OrdersTab({
   selectedOrder,
   setSelectedOrder,
   initialCategory = 'new',
+  onMoveToTrash,
+  onPermanentDelete,
+  onRestoreFromTrash,
 }: OrdersTabProps) {
   // Active Category Tab
   const [activeCategory, setActiveCategory] = useState<AdminOrderCategory | 'all'>(initialCategory);
@@ -78,6 +88,11 @@ export default function OrdersTab({
   // Receipt Modal
   const [receiptOrder, setReceiptOrder] = useState<CustomerOrder | null>(null);
 
+  // Delete / Trash Modal State
+  const [orderToDelete, setOrderToDelete] = useState<CustomerOrder | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteProcessing, setIsDeleteProcessing] = useState(false);
+
   // Status advance loading state
   const [advancingOrderId, setAdvancingOrderId] = useState<string | null>(null);
 
@@ -88,10 +103,10 @@ export default function OrdersTab({
     label: string;
   } | null>(null);
 
-  // Compute category counts for all 7 required categories
+  // Compute category counts for all required categories + Trash
   const categoryCounts = useMemo(() => {
     const counts: Record<AdminOrderCategory | 'all', number> = {
-      all: orders.length,
+      all: 0,
       new: 0,
       confirmed: 0,
       preparing: 0,
@@ -99,12 +114,18 @@ export default function OrdersTab({
       out_for_delivery: 0,
       delivered: 0,
       cancelled: 0,
+      trash: 0,
     };
 
     orders.forEach((ord) => {
-      const cat = getOrderCategory(ord);
-      if (counts[cat] !== undefined) {
-        counts[cat]++;
+      if (ord.is_trashed) {
+        counts.trash++;
+      } else {
+        counts.all++;
+        const cat = getOrderCategory(ord);
+        if (counts[cat] !== undefined) {
+          counts[cat]++;
+        }
       }
     });
 
@@ -128,10 +149,15 @@ export default function OrdersTab({
 
     return orders
       .filter((order) => {
-        // 1. Category Tab Filter
-        if (activeCategory !== 'all') {
-          const cat = getOrderCategory(order);
-          if (cat !== activeCategory) return false;
+        // 1. Trash separation
+        if (activeCategory === 'trash') {
+          if (!order.is_trashed) return false;
+        } else {
+          if (order.is_trashed) return false;
+          if (activeCategory !== 'all') {
+            const cat = getOrderCategory(order);
+            if (cat !== activeCategory) return false;
+          }
         }
 
         // 2. Search Filter (by Order ID, Customer Name, Phone, Address)
@@ -545,31 +571,72 @@ export default function OrdersTab({
                         </a>
                       </div>
 
-                      {/* Status Transition Action Buttons */}
+                      {/* Status Transition & Delete Action Buttons */}
                       <div className="flex items-center gap-2">
-                        {primaryTransition && (
-                          <button
-                            type="button"
-                            disabled={advancingOrderId === order.id}
-                            onClick={() => {
-                              setQuickConfirm({
-                                order,
-                                nextStatus: primaryTransition.nextStatus,
-                                label: primaryTransition.label,
-                              });
-                            }}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 disabled:opacity-50 ${primaryTransition.buttonClass}`}
-                          >
-                            <span>{primaryTransition.label}</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        {order.is_trashed ? (
+                          <>
+                            {onRestoreFromTrash && (
+                              <button
+                                type="button"
+                                onClick={() => onRestoreFromTrash(order)}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 transition cursor-pointer flex items-center gap-1.5"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Restore</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOrderToDelete(order);
+                                setIsDeleteModalOpen(true);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-xs font-bold text-rose-300 hover:bg-rose-500/30 transition cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Permanent Delete</span>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {primaryTransition && (
+                              <button
+                                type="button"
+                                disabled={advancingOrderId === order.id}
+                                onClick={() => {
+                                  setQuickConfirm({
+                                    order,
+                                    nextStatus: primaryTransition.nextStatus,
+                                    label: primaryTransition.label,
+                                  });
+                                }}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 disabled:opacity-50 ${primaryTransition.buttonClass}`}
+                              >
+                                <span>{primaryTransition.label}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            )}
 
-                        {validTransitions.length === 0 && (
-                          <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Fulfilled</span>
-                          </span>
+                            {validTransitions.length === 0 && (
+                              <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Fulfilled</span>
+                              </span>
+                            )}
+
+                            {/* Delete Order button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOrderToDelete(order);
+                                setIsDeleteModalOpen(true);
+                              }}
+                              className="p-1.5 rounded-xl bg-[#101F35] hover:bg-rose-950/40 border border-[#1C2D4A] hover:border-rose-500/40 text-xs font-bold text-[#AAB4C2] hover:text-rose-400 transition cursor-pointer"
+                              title="Delete Order"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -635,6 +702,50 @@ export default function OrdersTab({
       {receiptOrder && (
         <OrderReceiptModal order={receiptOrder} onClose={() => setReceiptOrder(null)} />
       )}
+
+      {/* Delete / Trash Confirmation Modal */}
+      <AdminDeleteOrderModal
+        order={orderToDelete}
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setOrderToDelete(null);
+        }}
+        onMoveToTrash={async (ord) => {
+          if (!onMoveToTrash) return;
+          setIsDeleteProcessing(true);
+          try {
+            await onMoveToTrash(ord);
+            setIsDeleteModalOpen(false);
+            setOrderToDelete(null);
+          } finally {
+            setIsDeleteProcessing(false);
+          }
+        }}
+        onPermanentDelete={async (ord) => {
+          if (!onPermanentDelete) return;
+          setIsDeleteProcessing(true);
+          try {
+            await onPermanentDelete(ord);
+            setIsDeleteModalOpen(false);
+            setOrderToDelete(null);
+          } finally {
+            setIsDeleteProcessing(false);
+          }
+        }}
+        onRestoreFromTrash={async (ord) => {
+          if (!onRestoreFromTrash) return;
+          setIsDeleteProcessing(true);
+          try {
+            await onRestoreFromTrash(ord);
+            setIsDeleteModalOpen(false);
+            setOrderToDelete(null);
+          } finally {
+            setIsDeleteProcessing(false);
+          }
+        }}
+        isProcessing={isDeleteProcessing}
+      />
     </div>
   );
 }

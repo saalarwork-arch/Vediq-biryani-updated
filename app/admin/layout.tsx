@@ -31,8 +31,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="admin-app-wrapper min-h-screen bg-slate-50 text-slate-900">
       {children}
-    </>
+    </div>
   );
 }
