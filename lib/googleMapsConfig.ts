@@ -15,7 +15,7 @@ export function getGoogleMapsApiKey(): string {
       : '';
 
   if (viteKey && typeof viteKey === 'string' && viteKey.includes('AIzaSy')) {
-    const token = viteKey.match(/AIzaSy[A-Za-z0-9_-]+/);
+    const token = viteKey.match(/AIzaSy[A-Za-z0-9_-]{33}/);
     if (token) return token[0].trim();
   }
 
@@ -36,15 +36,21 @@ export function getGoogleMapsApiKey(): string {
     try {
       const parsed = new URL(rawKey);
       const k = parsed.searchParams.get('key');
-      if (k && k.includes('AIzaSy')) return k.trim();
+      if (k && k.includes('AIzaSy')) {
+        const token = k.match(/AIzaSy[A-Za-z0-9_-]{33}/);
+        if (token) return token[0].trim();
+      }
     } catch {
       const match = rawKey.match(/[?&]key=([^&]+)/);
-      if (match && match[1]) return match[1].trim();
+      if (match && match[1]) {
+        const token = match[1].match(/AIzaSy[A-Za-z0-9_-]{33}/);
+        if (token) return token[0].trim();
+      }
     }
   }
 
-  // Extract clean AIzaSy token if embedded
-  const tokenMatch = rawKey.match(/AIzaSy[A-Za-z0-9_-]+/);
+  // Extract clean 39-character AIzaSy token if embedded
+  const tokenMatch = rawKey.match(/AIzaSy[A-Za-z0-9_-]{33}/);
   if (tokenMatch) {
     // If the token matches the unactivated legacy key, prefer the active demo key
     if (tokenMatch[0].includes('AOVYRIgupAurZup5y1PRh8Ismb1A3lLao')) {

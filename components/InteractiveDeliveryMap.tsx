@@ -68,8 +68,14 @@ function MapEventHandler({
     });
 
     return () => {
-      google.maps.event.removeListener(idleListener);
-      google.maps.event.removeListener(clickListener);
+      if (idleListener?.remove) idleListener.remove();
+      else if (typeof google !== 'undefined' && google.maps?.event?.removeListener) {
+        google.maps.event.removeListener(idleListener);
+      }
+      if (clickListener?.remove) clickListener.remove();
+      else if (typeof google !== 'undefined' && google.maps?.event?.removeListener) {
+        google.maps.event.removeListener(clickListener);
+      }
     };
   }, [map, onCenterChange, onMapClick]);
 
@@ -224,6 +230,26 @@ export default function InteractiveDeliveryMap({
           <Navigation className="w-3 h-3 text-[#B8860B]" />
           <span>Move the map to set your exact delivery location</span>
         </div>
+      </div>
+
+      {/* Quick Delhi NCR Zone Chips */}
+      <div className="absolute top-11 left-2 right-2 z-20 flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar justify-center">
+        {[
+          { name: 'Connaught Place', lat: 28.6315, lng: 77.2167 },
+          { name: 'Cyber Hub Gurgaon', lat: 28.4907, lng: 77.0890 },
+          { name: 'Noida Sec 18', lat: 28.5708, lng: 77.3260 },
+          { name: 'Saket', lat: 28.5244, lng: 77.2167 },
+          { name: 'Indirapuram', lat: 28.6415, lng: 77.3714 },
+        ].map((zone) => (
+          <button
+            key={zone.name}
+            type="button"
+            onClick={() => handleCoordsUpdate(zone.lat, zone.lng)}
+            className="shrink-0 px-2.5 py-1 rounded-full bg-slate-900/85 hover:bg-[#C9A24A] text-white hover:text-slate-950 text-[10px] font-semibold border border-white/20 shadow-md backdrop-blur-xs transition cursor-pointer"
+          >
+            {zone.name}
+          </button>
+        ))}
       </div>
 
       {/* Delivery Area Status Pill at Bottom Left */}

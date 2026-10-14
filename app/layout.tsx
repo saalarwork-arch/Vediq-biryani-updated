@@ -53,18 +53,34 @@ export default function RootLayout({
                 }
               } catch (e) {}
 
-              // Google Maps Platform Quota Defense Listener
+              // Google Maps Platform Quota Defense Listener (Two-Tier Quota Defense)
               try {
                 window.gm_authFailure = function() {
                   window.dispatchEvent(new CustomEvent('gmp-quota-exceeded'));
+                };
+                var checkQuotaMsg = function(msg) {
+                  if (
+                    msg.indexOf('OverQuotaMapError') !== -1 ||
+                    msg.indexOf('QuotaExceededError') !== -1 ||
+                    msg.indexOf('limit reached') !== -1 ||
+                    msg.indexOf('Maps Demo Key limit reached') !== -1 ||
+                    msg.indexOf('daily quota') !== -1 ||
+                    msg.indexOf('quota has been met') !== -1
+                  ) {
+                    window.dispatchEvent(new CustomEvent('gmp-quota-exceeded'));
+                  }
                 };
                 var origError = console.error;
                 console.error = function() {
                   origError.apply(console, arguments);
                   var msg = Array.prototype.slice.call(arguments).map(function(a){ return String(a); }).join(' ');
-                  if (msg.indexOf('OverQuotaMapError') !== -1 || msg.indexOf('QuotaExceededError') !== -1) {
-                    window.dispatchEvent(new CustomEvent('gmp-quota-exceeded'));
-                  }
+                  checkQuotaMsg(msg);
+                };
+                var origWarn = console.warn;
+                console.warn = function() {
+                  origWarn.apply(console, arguments);
+                  var msg = Array.prototype.slice.call(arguments).map(function(a){ return String(a); }).join(' ');
+                  checkQuotaMsg(msg);
                 };
               } catch (e) {}
             `,

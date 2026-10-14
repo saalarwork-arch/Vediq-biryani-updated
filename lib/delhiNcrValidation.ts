@@ -151,3 +151,64 @@ export async function validateDeliveryAddress(params: {
     matchedZone: 'Delhi NCR (Address Matched)',
   };
 }
+
+export interface DelhiNcrAnchor {
+  name: string;
+  road: string;
+  city: string;
+  state: string;
+  pincode: string;
+  lat: number;
+  lng: number;
+}
+
+export const DELHI_NCR_ANCHORS: DelhiNcrAnchor[] = [
+  { name: 'Connaught Place', road: 'Connaught Circus', city: 'New Delhi', state: 'Delhi', pincode: '110001', lat: 28.6315, lng: 77.2167 },
+  { name: 'Saket & South Ext', road: 'Press Enclave Marg', city: 'South Delhi', state: 'Delhi', pincode: '110017', lat: 28.5244, lng: 77.2167 },
+  { name: 'Vasant Kunj', road: 'Nelson Mandela Marg', city: 'South West Delhi', state: 'Delhi', pincode: '110070', lat: 28.5293, lng: 77.1534 },
+  { name: 'Dwarka Sub-City', road: 'Sector 10 Main Road', city: 'South West Delhi', state: 'Delhi', pincode: '110075', lat: 28.5823, lng: 77.0500 },
+  { name: 'Rohini & Pitampura', road: 'Sector 7 Outer Ring Rd', city: 'North West Delhi', state: 'Delhi', pincode: '110085', lat: 28.7166, lng: 77.1186 },
+  { name: 'Karol Bagh & Patel Nagar', road: 'Pusa Road', city: 'Central Delhi', state: 'Delhi', pincode: '110005', lat: 28.6514, lng: 77.1907 },
+  { name: 'DLF Cyber City & Phase 2', road: 'Cyber Hub Boulevard', city: 'Gurugram', state: 'Haryana', pincode: '122002', lat: 28.4907, lng: 77.0890 },
+  { name: 'Golf Course Road & Sector 54', road: 'Golf Course Road', city: 'Gurugram', state: 'Haryana', pincode: '122011', lat: 28.4350, lng: 77.1020 },
+  { name: 'Sohna Road & Sector 49', road: 'Sohna Road', city: 'Gurugram', state: 'Haryana', pincode: '122018', lat: 28.4110, lng: 77.0420 },
+  { name: 'Sector 18 & Atta Market', road: 'Captain Vijyant Thapar Marg', city: 'Noida', state: 'Uttar Pradesh', pincode: '201301', lat: 28.5708, lng: 77.3260 },
+  { name: 'Sector 62 & Electronic City', road: 'Institutional Area Road', city: 'Noida', state: 'Uttar Pradesh', pincode: '201309', lat: 28.6280, lng: 77.3649 },
+  { name: 'Sector 137 & Noida Expressway', road: 'Noida-Greater Noida Expressway', city: 'Noida', state: 'Uttar Pradesh', pincode: '201305', lat: 28.5020, lng: 77.4080 },
+  { name: 'Pari Chowk & Alpha 1', road: 'Surajpur Kasna Road', city: 'Greater Noida', state: 'Uttar Pradesh', pincode: '201310', lat: 28.4732, lng: 77.5030 },
+  { name: 'Indirapuram & Vaishali', road: 'Kala Patthar Marg', city: 'Ghaziabad', state: 'Uttar Pradesh', pincode: '201014', lat: 28.6415, lng: 77.3714 },
+  { name: 'Raj Nagar Extension', road: 'NH-58 Bypass', city: 'Ghaziabad', state: 'Uttar Pradesh', pincode: '201017', lat: 28.6970, lng: 77.4420 },
+  { name: 'Faridabad NIT & Sector 15', road: 'Mathura Road', city: 'Faridabad', state: 'Haryana', pincode: '121007', lat: 28.4111, lng: 77.3197 },
+];
+
+/**
+ * Returns an accurate reverse geocoding approximation for coordinates within Delhi NCR
+ */
+export function approximateDelhiNcrAddress(lat: number, lng: number): {
+  formatted_address: string;
+  road_area_colony: string;
+  city: string;
+  state: string;
+  pincode: string;
+} {
+  let closest = DELHI_NCR_ANCHORS[0];
+  let minDistanceSq = Number.MAX_VALUE;
+
+  for (const anchor of DELHI_NCR_ANCHORS) {
+    const dLat = anchor.lat - lat;
+    const dLng = anchor.lng - lng;
+    const distSq = dLat * dLat + dLng * dLng;
+    if (distSq < minDistanceSq) {
+      minDistanceSq = distSq;
+      closest = anchor;
+    }
+  }
+
+  return {
+    formatted_address: `Near ${closest.name}, ${closest.road}, ${closest.city}, ${closest.state} ${closest.pincode}`,
+    road_area_colony: `${closest.name}, ${closest.road}`,
+    city: closest.city,
+    state: closest.state,
+    pincode: closest.pincode,
+  };
+}

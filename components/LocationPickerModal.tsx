@@ -18,7 +18,11 @@ import {
   Building,
 } from 'lucide-react';
 import { SavedDeliveryAddress, AddressTag } from '@/types/supabase';
-import { isCoordinateInDelhiNcr, DELHI_NCR_UNSUPPORTED_MESSAGE } from '@/lib/delhiNcrValidation';
+import {
+  isCoordinateInDelhiNcr,
+  DELHI_NCR_UNSUPPORTED_MESSAGE,
+  DELHI_NCR_ANCHORS,
+} from '@/lib/delhiNcrValidation';
 import { reverseGeocodeCoordinates, saveDeliveryAddress } from '@/lib/addressStorage';
 import InteractiveDeliveryMap from './InteractiveDeliveryMap';
 
@@ -43,8 +47,8 @@ export default function LocationPickerModal({
   const [isSearching, setIsSearching] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteServiceRef = useRef<any>(null);
-  const placesServiceRef = useRef<any>(null);
+  const sessionTokenRef = useRef<any>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // GPS Location State
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
@@ -84,30 +88,8 @@ export default function LocationPickerModal({
   );
   const [saveForFuture, setSaveForFuture] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  // Form error and state
   const [formError, setFormError] = useState<string | null>(null);
-
-  // Initialize Places Autocomplete Service on demand
-  const getPlacesServices = () => {
-    if (typeof window !== 'undefined' && window.google?.maps?.places) {
-      if (!autocompleteServiceRef.current) {
-        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
-      }
-      if (!placesServiceRef.current) {
-        placesServiceRef.current = new window.google.maps.places.PlacesService(
-          document.createElement('div')
-        );
-      }
-      return {
-        autocomplete: autocompleteServiceRef.current,
-        places: placesServiceRef.current,
-      };
-    }
-    return null;
-  };
-
-  useEffect(() => {
-    getPlacesServices();
-  }, []);
 
   // Update form inputs when geocoded data updates
   useEffect(() => {
@@ -187,77 +169,128 @@ export default function LocationPickerModal({
       return;
     }
 
-    const services = getPlacesServices();
-    if (services?.autocomplete) {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
       setIsSearching(true);
-      // Bias search results to Delhi NCR
-      const delhiBounds = new window.google.maps.LatLngBounds(
-        new window.google.maps.LatLng(28.05, 76.65),
-        new window.google.maps.LatLng(29.15, 77.85)
-      );
 
-      services.autocomplete.getPlacePredictions(
-        {
-          input: text,
-          bounds: delhiBounds,
-          componentRestrictions: { country: 'in' },
-        },
-        (predictions: any, status: any) => {
-          setIsSearching(false);
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-            setSearchSuggestions(predictions);
-          } else {
-            setSearchSuggestions([]);
+      try {
+        // Try modern Google Places AutocompleteSuggestion if available
+        const gPlaces = window.google?.maps?.places;
+        if (gPlaces?.AutocompleteSuggestion) {
+          if (!sessionTokenRef.current && gPlaces.AutocompleteSessionToken) {
+            sessionTokenRef.current = new gPlaces.AutocompleteSessionToken();
+          }
+
+          const request: any = {
+            input: text,
+            sessionToken: sessionTokenRef.current,
+            includedRegionCodes: ['in'],
+          };
+
+          const res = await gPlaces.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+          if (res?.suggestions?.length > 0) {
+            const mapped = res.suggestions.slice(0, 5).map((s: any, idx: number) => ({
+              id: `gmp_sugg_${idx}`,
+              main_text: s.placePrediction?.mainText?.toString() || s.placePrediction?.text?.toString() || '',
+              secondary_text: s.placePrediction?.secondaryText?.toString() || 'Delhi NCR',
+              place: s.placePrediction?.toPlace ? s.placePrediction.toPlace() : null,
+            }));
+
+            setSearchSuggestions(mapped);
+            setIsSearching(false);
+            return;
           }
         }
-      );
-    }
+      } catch {
+        // Continue to Delhi NCR anchors
+      }
+
+      // Curated Delhi NCR local suggestions
+      const lower = text.toLowerCase();
+      const matched = DELHI_NCR_ANCHORS.filter(
+        (a) =>
+          a.name.toLowerCase().includes(lower) ||
+          a.road.toLowerCase().includes(lower) ||
+          a.city.toLowerCase().includes(lower) ||
+          a.pincode.includes(lower)
+      ).slice(0, 6);
+
+      const mappedAnchors = matched.map((a, idx) => ({
+        id: `local_anchor_${idx}`,
+        main_text: `${a.name}, ${a.road}`,
+        secondary_text: `${a.city}, ${a.state} ${a.pincode}`,
+        lat: a.lat,
+        lng: a.lng,
+        road: `${a.name}, ${a.road}`,
+        city: a.city,
+        state: a.state,
+        pincode: a.pincode,
+      }));
+
+      setSearchSuggestions(mappedAnchors);
+      setIsSearching(false);
+    }, 250);
   };
 
   // 3. Select Place Suggestion
-  const handleSelectSuggestion = (placeId: string, description: string) => {
-    setSearchQuery(description);
+  const handleSelectSuggestion = async (suggestion: any) => {
+    setSearchQuery(suggestion.main_text);
     setSearchSuggestions([]);
 
-    const services = getPlacesServices();
-    if (services?.places) {
-      services.places.getDetails(
-        { placeId, fields: ['geometry', 'formatted_address', 'address_components'] },
-        (place: any, status: any) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry) {
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-            setSelectedCoords({ lat, lng });
+    let lat = suggestion.lat;
+    let lng = suggestion.lng;
+    let formattedAddr = `${suggestion.main_text}, ${suggestion.secondary_text}`;
+    let road = suggestion.road || '';
+    let city = suggestion.city || 'Delhi NCR';
+    let state = suggestion.state || 'Delhi';
+    let pin = suggestion.pincode || '';
 
-            const isValid = isCoordinateInDelhiNcr(lat, lng);
-            let road = '';
-            let city = '';
-            let state = '';
-            let pin = '';
+    if (suggestion.place) {
+      try {
+        await suggestion.place.fetchFields({
+          fields: ['displayName', 'formattedAddress', 'location', 'addressComponents'],
+        });
 
-            (place.address_components || []).forEach((c: any) => {
-              if (c.types.includes('sublocality_level_1') || c.types.includes('route')) {
-                road = c.long_name;
-              }
-              if (c.types.includes('locality')) city = c.long_name;
-              if (c.types.includes('administrative_area_level_1')) state = c.long_name;
-              if (c.types.includes('postal_code')) pin = c.long_name;
-            });
-
-            setGeocodedData({
-              formatted_address: place.formatted_address || description,
-              road_area_colony: road || undefined,
-              city: city || 'Delhi NCR',
-              state: state || 'Delhi',
-              pincode: pin || undefined,
-              isValidDeliveryArea: isValid,
-            });
-
-            if (road) setRoadArea(road);
-            if (pin) setPincode(pin);
-          }
+        if (suggestion.place.location) {
+          lat = typeof suggestion.place.location.lat === 'function' ? suggestion.place.location.lat() : suggestion.place.location.lat;
+          lng = typeof suggestion.place.location.lng === 'function' ? suggestion.place.location.lng() : suggestion.place.location.lng;
         }
-      );
+        if (suggestion.place.formattedAddress) {
+          formattedAddr = suggestion.place.formattedAddress;
+        }
+        if (suggestion.place.addressComponents) {
+          (suggestion.place.addressComponents || []).forEach((c: any) => {
+            const types = c.types || [];
+            if (types.includes('sublocality_level_1') || types.includes('route')) {
+              road = c.longText;
+            }
+            if (types.includes('locality')) city = c.longText;
+            if (types.includes('administrative_area_level_1')) state = c.longText;
+            if (types.includes('postal_code')) pin = c.longText;
+          });
+        }
+      } catch (err) {
+        console.warn('[Vediq] place.fetchFields error:', err);
+      } finally {
+        sessionTokenRef.current = null;
+      }
+    }
+
+    if (lat && lng) {
+      setSelectedCoords({ lat, lng });
+      const isValid = isCoordinateInDelhiNcr(lat, lng);
+
+      setGeocodedData({
+        formatted_address: formattedAddr,
+        road_area_colony: road || undefined,
+        city: city || 'Delhi NCR',
+        state: state || 'Delhi',
+        pincode: pin || undefined,
+        isValidDeliveryArea: isValid,
+      });
+
+      if (road) setRoadArea(road);
+      if (pin) setPincode(pin);
     }
   };
 
@@ -403,18 +436,18 @@ export default function LocationPickerModal({
                     <div className="absolute top-full left-0 right-0 mt-1.5 z-40 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden max-h-56 overflow-y-auto">
                       {searchSuggestions.map((s) => (
                         <button
-                          key={s.place_id}
+                          key={s.id}
                           type="button"
-                          onClick={() => handleSelectSuggestion(s.place_id, s.description)}
+                          onClick={() => handleSelectSuggestion(s)}
                           className="w-full text-left px-4 py-2.5 hover:bg-amber-50/60 border-b border-gray-100 text-xs flex items-start gap-2.5 transition cursor-pointer"
                         >
                           <MapPin className="w-3.5 h-3.5 text-[#B8860B] shrink-0 mt-0.5" />
                           <div>
                             <p className="font-semibold text-gray-900">
-                              {s.structured_formatting?.main_text || s.description}
+                              {s.main_text}
                             </p>
                             <p className="text-[11px] text-gray-500">
-                              {s.structured_formatting?.secondary_text}
+                              {s.secondary_text}
                             </p>
                           </div>
                         </button>
